@@ -1,0 +1,90 @@
+[build-system]
+requires = [
+    "setuptools>=61.2",
+    "setuptools_scm[toml]>=6.2",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pwime"
+authors = [{name = "Henrique Gemignani Passos Lima"}]
+description = "A visual editor, combined with automated patcher, for the Metroid Prime series"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Games/Entertainment",
+]
+requires-python = ">=3.11"
+dynamic = ["version"]
+
+dependencies = [
+    "retro-data-structures>=0.22.0"
+]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[project.urls]
+Homepage = "https://github.com/randovania/pwime"
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+]
+
+# # Entry Points for PyInstaller
+# [project.entry-points.pyinstaller40]
+# hook-dirs = "python_project_template.__pyinstaller:get_hook_dirs"
+
+[tool.setuptools_scm]
+local_scheme = "no-local-version"
+write_to = "src/pwime/version.py"
+git_describe_command = "git describe --dirty --tags --long --match v[0-9]*"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = [
+    "tests",
+]
+# asyncio_mode = "auto"
+xfail_strict = true
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 120
+select = [
+    "E", "F", "W", "C90", "I", "UP", "C4",
+    "RSE",
+    "TCH",
+    "PTH",
+    "COM818", "COM819",
+    "ISC",
+    "PIE",
+
+    "PLC",
+    "PLE",
+    "PLR",
+    "PLW",
+]
+extend-ignore = [
+    "PLR0913",  # Too many arguments for function
+]
+src = ["src"]
+
+[tool.ruff.isort]
+# This is very desirable, but causes issues with py-cord and some usages of construct_pack.encode
+# required-imports = ["from __future__ import annotations"]
+
+[tool.black]
+line-length = 120
