@@ -132,4 +132,8 @@ dmypy.json
 /.idea
 
 # Project files
-/src/ppc_asm/version.py
+/src/pwime/version.py
+
+# imgui config
+/*.ini
+/NodeEditor.json
