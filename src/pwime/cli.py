@@ -6,6 +6,7 @@ def add_gui_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--iso", type=Path, help="Automatically load the given ISO")
 
     from pwime.gui.imgui_main import run_gui
+
     parser.set_defaults(func=run_gui)
 
 
