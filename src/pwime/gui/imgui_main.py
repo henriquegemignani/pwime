@@ -11,7 +11,9 @@ from retro_data_structures.base_resource import NameOrAssetId, BaseResource
 from retro_data_structures.exceptions import UnknownAssetId
 from retro_data_structures.formats import Mlvl
 from retro_data_structures.formats.mrea import Area
+from retro_data_structures.formats.script_object import ScriptInstance
 from retro_data_structures.game_check import Game
+from retro_data_structures.properties.base_property import BaseProperty
 
 _args: argparse.Namespace | None = None
 
@@ -49,12 +51,62 @@ class GuiState:
 state = GuiState()
 
 
+def _render_property(props: BaseProperty) -> None:
+    for field in dataclasses.fields(props):
+        imgui.table_next_row()
+        imgui.table_next_column()
+
+        item = getattr(props, field.name)
+        is_struct = isinstance(item, BaseProperty)
+
+        flags = imgui.TreeNodeFlags_.span_full_width
+        if not is_struct:
+            flags |= imgui.TreeNodeFlags_.leaf | imgui.TreeNodeFlags_.bullet | imgui.TreeNodeFlags_.no_tree_push_on_open
+
+        is_open = imgui.tree_node_ex(field.name, flags)
+        imgui.table_next_column()
+        imgui.text(type(item).__name__)
+        imgui.table_next_column()
+
+        if is_struct:
+            imgui.text("--")
+        else:
+            imgui.text(str(item))
+
+        if is_struct and is_open:
+            _render_property(item)
+            imgui.tree_pop()
+
+
+def _render_script_instance(instance: ScriptInstance) -> None:
+    props = instance.get_properties()
+
+    if imgui.begin_table("Properties", 3,
+                         imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable):
+        imgui.table_setup_column("Name")
+        imgui.table_setup_column("Type")
+        imgui.table_setup_column("Value")
+        imgui.table_headers_row()
+        _render_property(props)
+        imgui.end_table()
+
+
+def _create_dock_window_for_instance(area: Area, instance: ScriptInstance) -> hello_imgui.DockableWindow:
+    return hello_imgui.DockableWindow(
+        f"{instance.name} - {instance.id} ({area.name})",
+        "MainDockSpace",
+        gui_function_=functools.partial(_render_script_instance, instance)
+    )
+
+
 def _render_area(area: Area) -> None:
-    if imgui.begin_table("Objects", 4, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable):
+    if imgui.begin_table("Objects", 4,
+                         imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable):
         imgui.table_setup_column("Layer", imgui.TableColumnFlags_.width_fixed)
         imgui.table_setup_column("Instance Id", imgui.TableColumnFlags_.width_fixed)
         imgui.table_setup_column("Type", imgui.TableColumnFlags_.width_fixed)
         imgui.table_setup_column("Name")
+        imgui.table_headers_row()
 
         for layer in area.all_layers:
             for instance in layer.instances:
@@ -67,7 +119,12 @@ def _render_area(area: Area) -> None:
                 imgui.table_next_column()
                 imgui.text(instance.type.__name__)
                 imgui.table_next_column()
-                imgui.text(instance.name)
+                if imgui.selectable(
+                        f"{instance.name}##{instance.id}",
+                        False,
+                        imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
+                )[1]:
+                    state.pending_new_docks.append(_create_dock_window_for_instance(area, instance))
 
         imgui.end_table()
 
@@ -98,7 +155,6 @@ def _render_mlvl(mlvl: Mlvl, mlvl_id: int) -> None:
     if imgui.begin_table("Areas", 2, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h):
         imgui.table_setup_column("Name", imgui.TableColumnFlags_.width_fixed)
         imgui.table_setup_column("Asset Id", imgui.TableColumnFlags_.width_fixed)
-
         imgui.table_headers_row()
 
         for area in mlvl.areas:
