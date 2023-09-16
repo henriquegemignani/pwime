@@ -1,160 +1,14 @@
 from __future__ import annotations
 
 import argparse
-import dataclasses
-import functools
 import typing
 from pathlib import Path
 
 from imgui_bundle import imgui, hello_imgui, immapp
 from imgui_bundle import portable_file_dialogs
-from retro_data_structures.asset_manager import IsoFileProvider
-from retro_data_structures.exceptions import UnknownAssetId
-from retro_data_structures.formats import Mlvl
-from retro_data_structures.formats.mrea import Area
-from retro_data_structures.formats.script_object import ScriptInstance
-from retro_data_structures.game_check import Game
 
-from pwime.gui.asset_manager import OurAssetManager
-from pwime.gui.property_renderer import render_property
-from pwime.gui.references import InstanceReference, PropReference
-
-_args: argparse.Namespace | None = None
-
-
-@dataclasses.dataclass()
-class GuiState:
-    asset_manager: OurAssetManager | None = None
-    mlvls: tuple[int, ...] = ()
-    open_file_dialog: portable_file_dialogs.open_file = None
-    selected_asset: int | None = None
-    pending_new_docks: list[hello_imgui.DockableWindow] = dataclasses.field(default_factory=list)
-
-    def load_iso(self, path: Path):
-        self.asset_manager = OurAssetManager(IsoFileProvider(path), Game.ECHOES)
-        self.mlvls = tuple(
-            i for i in self.asset_manager.all_asset_ids() if self.asset_manager.get_asset_type(i) == "MLVL"
-        )
-
-
-state = GuiState()
-
-
-class ScriptInstanceDockWindow(hello_imgui.DockableWindow):
-    def __init__(self, parent: AreaDockWindow, instance: ScriptInstance):
-        super().__init__(
-            f"{instance.name} - {instance.id} ({parent.area.name})",
-            "RightSpace",
-            gui_function_=self.render,
-        )
-        self.parent = parent
-        self.instance = instance
-
-    def render(self):
-        props = self.instance.get_properties()
-
-        if imgui.begin_table("Properties", 3,
-                             imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable):
-            imgui.table_setup_column("Name")
-            imgui.table_setup_column("Type")
-            imgui.table_setup_column("Value")
-            imgui.table_headers_row()
-            render_property(props,
-                            PropReference(
-                                 InstanceReference(self.parent.area.mrea_asset_id, self.instance.id), ())
-                            )
-            imgui.end_table()
-
-
-class AreaDockWindow(hello_imgui.DockableWindow):
-    def __init__(self, area: Area):
-        super().__init__(
-            area.name,
-            "MainDockSpace",
-            gui_function_=self.render,
-        )
-        self.area = area
-        self.filter = ""
-
-    def render(self):
-        changed, new_text = imgui.input_text("Filter Objects", self.filter)
-        if changed:
-            self.filter = new_text
-
-        if imgui.begin_table("Objects", 4,
-                             imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable):
-            imgui.table_setup_column("Layer", imgui.TableColumnFlags_.width_fixed)
-            imgui.table_setup_column("Instance Id", imgui.TableColumnFlags_.width_fixed)
-            imgui.table_setup_column("Type", imgui.TableColumnFlags_.width_fixed)
-            imgui.table_setup_column("Name")
-            imgui.table_headers_row()
-
-            for layer in self.area.all_layers:
-                for instance in layer.instances:
-                    instance_name = instance.name
-                    type_name = instance.type.__name__
-
-                    if self.filter:
-                        if self.filter not in instance_name and self.filter not in type_name:
-                            continue
-
-                    imgui.table_next_row()
-
-                    imgui.table_next_column()
-                    imgui.text(layer.name if layer.has_parent else "<Generated Objects>")
-                    imgui.table_next_column()
-                    imgui.text(str(instance.id))
-                    imgui.table_next_column()
-                    imgui.text(type_name)
-                    imgui.table_next_column()
-                    if imgui.selectable(
-                            f"{instance_name}##{instance.id}",
-                            False,
-                            imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
-                    )[1]:
-                        state.pending_new_docks.append(ScriptInstanceDockWindow(self, instance))
-
-            imgui.end_table()
-
-
-def _create_dock_window_for_mlvl(mlvl_id: int) -> hello_imgui.DockableWindow:
-    mlvl = state.asset_manager.get_file(mlvl_id, Mlvl)
-    try:
-        name = mlvl.world_name
-    except UnknownAssetId:
-        name = f"MLVL {mlvl_id:08x}"
-
-    return hello_imgui.DockableWindow(
-        name,
-        "MainDockSpace",
-        gui_function_=functools.partial(_render_mlvl, mlvl, mlvl_id)
-    )
-
-
-def _render_mlvl(mlvl: Mlvl, mlvl_id: int) -> None:
-    if imgui.begin_table("Areas", 2, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h):
-        imgui.table_setup_column("Name", imgui.TableColumnFlags_.width_fixed)
-        imgui.table_setup_column("Asset Id", imgui.TableColumnFlags_.width_fixed)
-        imgui.table_headers_row()
-
-        areas = list(mlvl.areas)
-        areas.sort(key=lambda it: it.name)
-
-        for area in areas:
-            imgui.table_next_row()
-
-            imgui.table_next_column()
-            imgui.text(area.name)
-
-            imgui.table_next_column()
-            if imgui.selectable(
-                    f"{area.mrea_asset_id:08x}",
-                    False,
-                    imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
-            )[1]:
-                state.pending_new_docks.append(AreaDockWindow(area))
-
-        imgui.end_table()
+from pwime.gui.gui_state import state
+from pwime.gui.mlvl import MlvlDockWindow
 
 
 def main_gui() -> None:
@@ -174,11 +28,11 @@ def main_gui() -> None:
 
                 imgui.table_next_column()
                 if imgui.selectable(
-                        f"{i:08x}",
+                        f"{i:08X}",
                         False,
                         imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
                 )[1]:
-                    state.pending_new_docks.append(_create_dock_window_for_mlvl(i))
+                    state.pending_new_docks.append(MlvlDockWindow(i))
 
                 imgui.table_next_column()
                 imgui.text_disabled("<unknown>")
