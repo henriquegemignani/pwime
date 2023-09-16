@@ -76,6 +76,13 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
         imgui.text(f"{self.item:08X}")
 
 
+def _enum_name(e: enum.Enum) -> str:
+    name = e.name
+    if name == "_None":
+        return "None"
+    return name
+
+
 class IntEnumRenderer(PropertyRenderer[enum.IntEnum]):
     """Renders a combo box to select an enum value."""
 
@@ -86,7 +93,7 @@ class IntEnumRenderer(PropertyRenderer[enum.IntEnum]):
         return None
 
     def render(self, reference: PropReference) -> None:
-        all_values = [it.name for it in self.item.__class__]
+        all_values = [_enum_name(it) for it in self.item.__class__]
         imgui.combo(f"##{self.field.name}", self.item.value, all_values)
 
 
@@ -102,7 +109,7 @@ class IntFlagRenderer(PropertyRenderer[enum.IntFlag]):
     def render(self, reference: PropReference) -> None:
         if imgui.begin_combo(f"##{self.field.name}", self.item.name):
             for alt in self.item.__class__:
-                imgui.checkbox(alt.name, alt in self.item)
+                imgui.checkbox(_enum_name(alt), alt in self.item)
             imgui.end_combo()
 
 
