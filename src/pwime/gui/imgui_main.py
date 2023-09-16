@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import dataclasses
 import enum
@@ -15,6 +17,7 @@ from retro_data_structures.formats.mrea import Area
 from retro_data_structures.formats.script_object import ScriptInstance, InstanceId
 from retro_data_structures.game_check import Game
 from retro_data_structures.properties.base_property import BaseProperty
+from retro_data_structures.properties.echoes.core.Spline import Spline
 from retro_data_structures.properties.shared_core import Vector
 
 _args: argparse.Namespace | None = None
@@ -106,72 +109,93 @@ def _render_property(props: BaseProperty, reference: PropReference) -> None:
             elif isinstance(item, enum.IntEnum):
                 all_values = [it.name for it in item.__class__]
                 imgui.combo(f"##{field.name}", item.value, all_values)
+
             else:
                 imgui.text(str(item))
 
         if is_struct and is_open:
-            _render_property(item, reference.append(field.name))
+            if isinstance(item, Spline):
+                imgui.text(str(item.decoded()))
+            else:
+                _render_property(item, reference.append(field.name))
             imgui.tree_pop()
 
 
-def _render_script_instance(instance: ScriptInstance, instance_ref: InstanceReference) -> None:
-    props = instance.get_properties()
+class ScriptInstanceDockWindow(hello_imgui.DockableWindow):
+    def __init__(self, parent: AreaDockWindow, instance: ScriptInstance):
+        super().__init__(
+            f"{instance.name} - {instance.id} ({parent.area.name})",
+            "RightSpace",
+            gui_function_=self.render,
+        )
+        self.parent = parent
+        self.instance = instance
 
-    if imgui.begin_table("Properties", 3,
-                         imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable):
-        imgui.table_setup_column("Name")
-        imgui.table_setup_column("Type")
-        imgui.table_setup_column("Value")
-        imgui.table_headers_row()
-        _render_property(props, PropReference(instance_ref, ()))
-        imgui.end_table()
+    def render(self):
+        props = self.instance.get_properties()
 
-
-def _create_dock_window_for_instance(area: Area, instance: ScriptInstance) -> hello_imgui.DockableWindow:
-    return hello_imgui.DockableWindow(
-        f"{instance.name} - {instance.id} ({area.name})",
-        "MainDockSpace",
-        gui_function_=functools.partial(_render_script_instance, instance,
-                                        InstanceReference(area.mrea_asset_id, instance.id))
-    )
-
-
-def _render_area(area: Area) -> None:
-    if imgui.begin_table("Objects", 4,
-                         imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable):
-        imgui.table_setup_column("Layer", imgui.TableColumnFlags_.width_fixed)
-        imgui.table_setup_column("Instance Id", imgui.TableColumnFlags_.width_fixed)
-        imgui.table_setup_column("Type", imgui.TableColumnFlags_.width_fixed)
-        imgui.table_setup_column("Name")
-        imgui.table_headers_row()
-
-        for layer in area.all_layers:
-            for instance in layer.instances:
-                imgui.table_next_row()
-
-                imgui.table_next_column()
-                imgui.text(layer.name if layer.has_parent else "<Generated Objects>")
-                imgui.table_next_column()
-                imgui.text(str(instance.id))
-                imgui.table_next_column()
-                imgui.text(instance.type.__name__)
-                imgui.table_next_column()
-                if imgui.selectable(
-                        f"{instance.name}##{instance.id}",
-                        False,
-                        imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
-                )[1]:
-                    state.pending_new_docks.append(_create_dock_window_for_instance(area, instance))
-
-        imgui.end_table()
+        if imgui.begin_table("Properties", 3,
+                             imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable):
+            imgui.table_setup_column("Name")
+            imgui.table_setup_column("Type")
+            imgui.table_setup_column("Value")
+            imgui.table_headers_row()
+            _render_property(props,
+                             PropReference(
+                                 InstanceReference(self.parent.area.mrea_asset_id, self.instance.id), ())
+                             )
+            imgui.end_table()
 
 
-def _create_dock_window_for_area(area: Area) -> hello_imgui.DockableWindow:
-    return hello_imgui.DockableWindow(
-        area.name,
-        "MainDockSpace",
-        gui_function_=functools.partial(_render_area, area)
-    )
+class AreaDockWindow(hello_imgui.DockableWindow):
+    def __init__(self, area: Area):
+        super().__init__(
+            area.name,
+            "MainDockSpace",
+            gui_function_=self.render,
+        )
+        self.area = area
+        self.filter = ""
+
+    def render(self):
+        changed, new_text = imgui.input_text("Filter Objects", self.filter)
+        if changed:
+            self.filter = new_text
+
+        if imgui.begin_table("Objects", 4,
+                             imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable):
+            imgui.table_setup_column("Layer", imgui.TableColumnFlags_.width_fixed)
+            imgui.table_setup_column("Instance Id", imgui.TableColumnFlags_.width_fixed)
+            imgui.table_setup_column("Type", imgui.TableColumnFlags_.width_fixed)
+            imgui.table_setup_column("Name")
+            imgui.table_headers_row()
+
+            for layer in self.area.all_layers:
+                for instance in layer.instances:
+                    instance_name = instance.name
+                    type_name = instance.type.__name__
+
+                    if self.filter:
+                        if self.filter not in instance_name and self.filter not in type_name:
+                            continue
+
+                    imgui.table_next_row()
+
+                    imgui.table_next_column()
+                    imgui.text(layer.name if layer.has_parent else "<Generated Objects>")
+                    imgui.table_next_column()
+                    imgui.text(str(instance.id))
+                    imgui.table_next_column()
+                    imgui.text(type_name)
+                    imgui.table_next_column()
+                    if imgui.selectable(
+                            f"{instance_name}##{instance.id}",
+                            False,
+                            imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
+                    )[1]:
+                        state.pending_new_docks.append(ScriptInstanceDockWindow(self, instance))
+
+            imgui.end_table()
 
 
 def _create_dock_window_for_mlvl(mlvl_id: int) -> hello_imgui.DockableWindow:
@@ -194,7 +218,10 @@ def _render_mlvl(mlvl: Mlvl, mlvl_id: int) -> None:
         imgui.table_setup_column("Asset Id", imgui.TableColumnFlags_.width_fixed)
         imgui.table_headers_row()
 
-        for area in mlvl.areas:
+        areas = list(mlvl.areas)
+        areas.sort(key=lambda it: it.name)
+
+        for area in areas:
             imgui.table_next_row()
 
             imgui.table_next_column()
@@ -206,7 +233,7 @@ def _render_mlvl(mlvl: Mlvl, mlvl_id: int) -> None:
                     False,
                     imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
             )[1]:
-                state.pending_new_docks.append(_create_dock_window_for_area(area))
+                state.pending_new_docks.append(AreaDockWindow(area))
 
         imgui.end_table()
 
@@ -297,5 +324,11 @@ def run_gui(args: argparse.Namespace) -> None:
 
     add_dockable_window("File List", main_gui)
     runner_params.docking_params.dockable_windows = dockable_windows
+
+    runner_params.docking_params.docking_splits = [
+        hello_imgui.DockingSplit(
+            "MainDockSpace", "RightSpace", imgui.Dir_.right, 0.25
+        )
+    ]
 
     immapp.run(runner_params=runner_params)
