@@ -2,40 +2,24 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
-import enum
 import functools
 import typing
 from pathlib import Path
 
 from imgui_bundle import imgui, hello_imgui, immapp
 from imgui_bundle import portable_file_dialogs
-from retro_data_structures.asset_manager import AssetManager, IsoFileProvider, FileProvider
-from retro_data_structures.base_resource import NameOrAssetId, BaseResource
+from retro_data_structures.asset_manager import IsoFileProvider
 from retro_data_structures.exceptions import UnknownAssetId
 from retro_data_structures.formats import Mlvl
 from retro_data_structures.formats.mrea import Area
-from retro_data_structures.formats.script_object import ScriptInstance, InstanceId
+from retro_data_structures.formats.script_object import ScriptInstance
 from retro_data_structures.game_check import Game
-from retro_data_structures.properties.base_property import BaseProperty
-from retro_data_structures.properties.echoes.core.Spline import Spline
-from retro_data_structures.properties.shared_core import Vector
+
+from pwime.gui.asset_manager import OurAssetManager
+from pwime.gui.property_renderer import render_property
+from pwime.gui.references import InstanceReference, PropReference
 
 _args: argparse.Namespace | None = None
-
-T = typing.TypeVar("T", bound=BaseResource)
-
-
-class OurAssetManager(AssetManager):
-    memory_files: dict[NameOrAssetId, BaseResource]
-
-    def __init__(self, provider: FileProvider, target_game: Game):
-        super().__init__(provider, target_game)
-        self.memory_files = {}
-
-    def get_file(self, path: NameOrAssetId, type_hint: type[T] = BaseResource) -> T:
-        if path not in self.memory_files:
-            self.memory_files[path] = self.get_parsed_asset(path, type_hint=type_hint)
-        return self.memory_files[path]
 
 
 @dataclasses.dataclass()
@@ -54,71 +38,6 @@ class GuiState:
 
 
 state = GuiState()
-
-
-@dataclasses.dataclass(frozen=True)
-class InstanceReference:
-    mrea: int
-    instance_id: InstanceId
-
-
-@dataclasses.dataclass(frozen=True)
-class PropReference:
-    instance: InstanceReference
-    path: tuple[str, ...]
-
-    def append(self, field: str) -> typing.Self:
-        return PropReference(self.instance, self.path + (field,))
-
-
-def _render_property(props: BaseProperty, reference: PropReference) -> None:
-    for field in dataclasses.fields(props):
-        imgui.table_next_row()
-        imgui.table_next_column()
-
-        item = getattr(props, field.name)
-        is_vector = isinstance(item, Vector)
-        is_struct = isinstance(item, BaseProperty) and not is_vector
-
-        flags = imgui.TreeNodeFlags_.span_full_width
-        if not is_struct:
-            flags |= imgui.TreeNodeFlags_.leaf | imgui.TreeNodeFlags_.bullet | imgui.TreeNodeFlags_.no_tree_push_on_open
-
-        is_open = imgui.tree_node_ex(field.name, flags)
-        imgui.table_next_column()
-        imgui.text(type(item).__name__)
-        imgui.table_next_column()
-
-        if is_struct:
-            imgui.text("--")
-        else:
-            if isinstance(item, Vector):
-                v = [item.x, item.y, item.z]
-                imgui.input_float3(f"##{field.name}", v)
-            elif isinstance(item, bool):
-                imgui.checkbox(f"##{field.name}", item)
-            elif isinstance(item, float):
-                imgui.input_float(f"##{field.name}", item)
-            elif isinstance(item, str):
-                imgui.input_text(f"##{field.name}", item)
-            elif isinstance(item, enum.IntFlag):
-                if imgui.begin_combo(f"##{field.name}", item.name):
-                    for alt in item.__class__:
-                        imgui.checkbox(alt.name, alt in item)
-                    imgui.end_combo()
-            elif isinstance(item, enum.IntEnum):
-                all_values = [it.name for it in item.__class__]
-                imgui.combo(f"##{field.name}", item.value, all_values)
-
-            else:
-                imgui.text(str(item))
-
-        if is_struct and is_open:
-            if isinstance(item, Spline):
-                imgui.text(str(item.decoded()))
-            else:
-                _render_property(item, reference.append(field.name))
-            imgui.tree_pop()
 
 
 class ScriptInstanceDockWindow(hello_imgui.DockableWindow):
@@ -140,10 +59,10 @@ class ScriptInstanceDockWindow(hello_imgui.DockableWindow):
             imgui.table_setup_column("Type")
             imgui.table_setup_column("Value")
             imgui.table_headers_row()
-            _render_property(props,
-                             PropReference(
+            render_property(props,
+                            PropReference(
                                  InstanceReference(self.parent.area.mrea_asset_id, self.instance.id), ())
-                             )
+                            )
             imgui.end_table()
 
 
