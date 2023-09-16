@@ -1,5 +1,6 @@
 import argparse
 import dataclasses
+import enum
 import functools
 import typing
 from pathlib import Path
@@ -11,9 +12,10 @@ from retro_data_structures.base_resource import NameOrAssetId, BaseResource
 from retro_data_structures.exceptions import UnknownAssetId
 from retro_data_structures.formats import Mlvl
 from retro_data_structures.formats.mrea import Area
-from retro_data_structures.formats.script_object import ScriptInstance
+from retro_data_structures.formats.script_object import ScriptInstance, InstanceId
 from retro_data_structures.game_check import Game
 from retro_data_structures.properties.base_property import BaseProperty
+from retro_data_structures.properties.shared_core import Vector
 
 _args: argparse.Namespace | None = None
 
@@ -51,13 +53,29 @@ class GuiState:
 state = GuiState()
 
 
-def _render_property(props: BaseProperty) -> None:
+@dataclasses.dataclass(frozen=True)
+class InstanceReference:
+    mrea: int
+    instance_id: InstanceId
+
+
+@dataclasses.dataclass(frozen=True)
+class PropReference:
+    instance: InstanceReference
+    path: tuple[str, ...]
+
+    def append(self, field: str) -> typing.Self:
+        return PropReference(self.instance, self.path + (field,))
+
+
+def _render_property(props: BaseProperty, reference: PropReference) -> None:
     for field in dataclasses.fields(props):
         imgui.table_next_row()
         imgui.table_next_column()
 
         item = getattr(props, field.name)
-        is_struct = isinstance(item, BaseProperty)
+        is_vector = isinstance(item, Vector)
+        is_struct = isinstance(item, BaseProperty) and not is_vector
 
         flags = imgui.TreeNodeFlags_.span_full_width
         if not is_struct:
@@ -71,14 +89,32 @@ def _render_property(props: BaseProperty) -> None:
         if is_struct:
             imgui.text("--")
         else:
-            imgui.text(str(item))
+            if isinstance(item, Vector):
+                v = [item.x, item.y, item.z]
+                imgui.input_float3(f"##{field.name}", v)
+            elif isinstance(item, bool):
+                imgui.checkbox(f"##{field.name}", item)
+            elif isinstance(item, float):
+                imgui.input_float(f"##{field.name}", item)
+            elif isinstance(item, str):
+                imgui.input_text(f"##{field.name}", item)
+            elif isinstance(item, enum.IntFlag):
+                if imgui.begin_combo(f"##{field.name}", item.name):
+                    for alt in item.__class__:
+                        imgui.checkbox(alt.name, alt in item)
+                    imgui.end_combo()
+            elif isinstance(item, enum.IntEnum):
+                all_values = [it.name for it in item.__class__]
+                imgui.combo(f"##{field.name}", item.value, all_values)
+            else:
+                imgui.text(str(item))
 
         if is_struct and is_open:
-            _render_property(item)
+            _render_property(item, reference.append(field.name))
             imgui.tree_pop()
 
 
-def _render_script_instance(instance: ScriptInstance) -> None:
+def _render_script_instance(instance: ScriptInstance, instance_ref: InstanceReference) -> None:
     props = instance.get_properties()
 
     if imgui.begin_table("Properties", 3,
@@ -87,7 +123,7 @@ def _render_script_instance(instance: ScriptInstance) -> None:
         imgui.table_setup_column("Type")
         imgui.table_setup_column("Value")
         imgui.table_headers_row()
-        _render_property(props)
+        _render_property(props, PropReference(instance_ref, ()))
         imgui.end_table()
 
 
@@ -95,7 +131,8 @@ def _create_dock_window_for_instance(area: Area, instance: ScriptInstance) -> he
     return hello_imgui.DockableWindow(
         f"{instance.name} - {instance.id} ({area.name})",
         "MainDockSpace",
-        gui_function_=functools.partial(_render_script_instance, instance)
+        gui_function_=functools.partial(_render_script_instance, instance,
+                                        InstanceReference(area.mrea_asset_id, instance.id))
     )
 
 
