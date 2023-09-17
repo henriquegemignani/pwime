@@ -60,6 +60,7 @@ def _show_menu() -> None:
 def _pre_new_frame() -> None:
     if state.pending_new_docks:
         params = hello_imgui.get_runner_params().docking_params
+        params.layout_reset = True  # fixme: this resets user modifications :(
         params.dockable_windows = params.dockable_windows + state.pending_new_docks
         state.pending_new_docks = []
 
@@ -100,7 +101,7 @@ def run_gui(args: argparse.Namespace) -> None:
 
     runner_params.docking_params.docking_splits = [
         hello_imgui.DockingSplit(
-            "MainDockSpace", "RightSpace", imgui.Dir_.right, 0.25
+            "MainDockSpace", "RightSpace", imgui.Dir_.right, 0.4
         )
     ]
 
