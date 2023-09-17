@@ -35,7 +35,7 @@ def main_gui() -> None:
                     state.pending_new_docks.append(MlvlDockWindow(i))
 
                 imgui.table_next_column()
-                imgui.text_disabled("<unknown>")
+                imgui.text_disabled(state.asset_manager.asset_names.get(i, "<unknown>"))
 
             imgui.end_table()
     else:

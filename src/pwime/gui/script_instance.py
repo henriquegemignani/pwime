@@ -10,6 +10,7 @@ from retro_data_structures.formats.script_object import ScriptInstance
 from retro_data_structures.properties.base_property import BaseProperty
 from retro_data_structures.properties.base_vector import BaseVector
 
+from pwime.gui.gui_state import state
 from pwime.gui.references import PropReference, InstanceReference
 
 if typing.TYPE_CHECKING:
@@ -73,7 +74,11 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
         return None
 
     def render(self, reference: PropReference) -> None:
-        imgui.text(f"{self.item:08X}")
+        types = ",".join(self.field.metadata["asset_types"])
+        if imgui.button(f"Select {types}"):
+            pass
+        imgui.same_line()
+        imgui.text(state.asset_manager.asset_names.get(self.item, f"{self.item:08X}"))
 
 
 def _enum_name(e: enum.Enum) -> str:
@@ -114,7 +119,7 @@ class IntFlagRenderer(PropertyRenderer[enum.IntFlag]):
 
 
 class FloatRenderer(PropertyRenderer[float]):
-    """Renders the str as text box."""
+    """Renders the float as an float input."""
 
     @classmethod
     def matches(cls, item: object, field: dataclasses.Field) -> typing.Self | None:
