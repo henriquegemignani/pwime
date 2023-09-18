@@ -20,7 +20,7 @@ def main_gui() -> None:
 
             imgui.table_headers_row()
 
-            for i in state.mlvls:
+            for i in state.global_file_list:
                 imgui.table_next_row()
 
                 imgui.table_next_column()

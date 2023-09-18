@@ -13,15 +13,19 @@ from pwime.gui.asset_manager import OurAssetManager
 @dataclasses.dataclass()
 class GuiState:
     asset_manager: OurAssetManager | None = None
-    mlvls: tuple[int, ...] = ()
+    global_file_list: tuple[int, ...] = ()
     open_file_dialog: portable_file_dialogs.open_file = None
     selected_asset: int | None = None
     pending_new_docks: list[hello_imgui.DockableWindow] = dataclasses.field(default_factory=list)
 
     def load_iso(self, path: Path):
         self.asset_manager = OurAssetManager(IsoFileProvider(path), Game.ECHOES)
-        self.mlvls = tuple(
-            i for i in self.asset_manager.all_asset_ids() if self.asset_manager.get_asset_type(i) == "MLVL"
+
+        global_file_types = {
+            "MLVL",
+        }
+        self.global_file_list = tuple(
+            i for i in self.asset_manager.all_asset_ids() if self.asset_manager.get_asset_type(i) in global_file_types
         )
 
 

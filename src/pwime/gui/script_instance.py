@@ -7,6 +7,7 @@ import typing
 from imgui_bundle import imgui, hello_imgui
 from retro_data_structures.base_resource import AssetId
 from retro_data_structures.formats.script_object import ScriptInstance
+from retro_data_structures.properties.base_color import BaseColor
 from retro_data_structures.properties.base_property import BaseProperty
 from retro_data_structures.properties.base_vector import BaseVector
 
@@ -45,6 +46,18 @@ class VectorRenderer(PropertyRenderer[BaseVector]):
     def render(self, reference: PropReference) -> None:
         v = [self.item.x, self.item.y, self.item.z]
         imgui.input_float3(f"##{self.field.name}", v)
+
+
+class ColorRenderer(PropertyRenderer[BaseColor]):
+    @classmethod
+    def matches(cls, item: object, field: dataclasses.Field) -> typing.Self | None:
+        if isinstance(item, BaseColor):
+            return cls(item, field)
+        return None
+
+    def render(self, reference: PropReference) -> None:
+        v = [self.item.r, self.item.g, self.item.b, self.item.a]
+        imgui.color_edit4(f"##{self.field.name}", v)
 
 
 class GenericPropertyRenderer(PropertyRenderer[BaseProperty]):
@@ -183,6 +196,7 @@ class UnknownPropertyRenderer(PropertyRenderer):
 
 ALL_PROPERTY_RENDERERS = [
     VectorRenderer,
+    ColorRenderer,
     GenericPropertyRenderer,
     IntEnumRenderer,
     IntFlagRenderer,
