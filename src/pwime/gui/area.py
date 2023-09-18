@@ -1,23 +1,47 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from imgui_bundle import hello_imgui, imgui
-from retro_data_structures.formats.mrea import Area
 
 from pwime.gui.gui_state import state
-from pwime.gui.script_instance import ScriptInstanceDockWindow
+from pwime.gui.script_instance import ScriptInstanceState
+
+if TYPE_CHECKING:
+    from retro_data_structures.formats.mrea import Area
 
 
-class AreaDockWindow(hello_imgui.DockableWindow):
-    def __init__(self, area: Area):
-        super().__init__(
-            area.name,
+class AreaState(hello_imgui.DockableWindow):
+    area: Area | None = None
+    filter: str = ""
+    window_label: str = "Area###Area"
+
+    def create_imgui_window(self) -> hello_imgui.DockableWindow:
+        result = hello_imgui.DockableWindow(
+            self.window_label,
             "MainDockSpace",
-            gui_function_=self.render,
+            self.render,
+            is_visible_=False,
         )
+        result.include_in_view_menu = False
+        result.remember_is_visible = False
+        return result
+
+    def open_area(self, area: Area) -> None:
         self.area = area
-        self.filter = ""
+
+        window = hello_imgui.get_runner_params().docking_params.dockable_window_of_name(
+            self.window_label
+        )
+        window.is_visible = True
+
+        self.window_label = f"{self.area.name}###Area"
+        window.label = self.window_label
 
     def render(self):
+        if self.area is None:
+            return
+
         changed, new_text = imgui.input_text("Filter Objects", self.filter)
         if changed:
             self.filter = new_text
@@ -53,6 +77,6 @@ class AreaDockWindow(hello_imgui.DockableWindow):
                             False,
                             imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
                     )[1]:
-                        state.pending_new_docks.append(ScriptInstanceDockWindow(self, instance))
+                        state().instance_state.open_instance(self.area, instance)
 
             imgui.end_table()

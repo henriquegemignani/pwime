@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-import argparse
 import typing
 from pathlib import Path
 
-from imgui_bundle import imgui, hello_imgui, immapp
-from imgui_bundle import portable_file_dialogs
+from imgui_bundle import hello_imgui, imgui, immapp, portable_file_dialogs
 
 from pwime.gui.gui_state import state
-from pwime.gui.mlvl import MlvlDockWindow
+
+if typing.TYPE_CHECKING:
+    import argparse
 
 
 def main_gui() -> None:
-    if state.asset_manager is not None:
+    if state().asset_manager is not None:
         if imgui.begin_table("All Assets", 3, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h):
             imgui.table_setup_column("Type", imgui.TableColumnFlags_.width_fixed)
             imgui.table_setup_column("Asset Id", imgui.TableColumnFlags_.width_fixed)
@@ -20,11 +20,11 @@ def main_gui() -> None:
 
             imgui.table_headers_row()
 
-            for i in state.global_file_list:
+            for i in state().global_file_list:
                 imgui.table_next_row()
 
                 imgui.table_next_column()
-                imgui.text(state.asset_manager.get_asset_type(i))
+                imgui.text(state().asset_manager.get_asset_type(i))
 
                 imgui.table_next_column()
                 if imgui.selectable(
@@ -32,10 +32,10 @@ def main_gui() -> None:
                         False,
                         imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
                 )[1]:
-                    state.pending_new_docks.append(MlvlDockWindow(i))
+                    state().mlvl_state.open_mlvl(i)
 
                 imgui.table_next_column()
-                imgui.text_disabled(state.asset_manager.asset_names.get(i, "<unknown>"))
+                imgui.text_disabled(state().asset_manager.asset_names.get(i, "<unknown>"))
 
             imgui.end_table()
     else:
@@ -45,28 +45,27 @@ def main_gui() -> None:
 def _show_menu() -> None:
     if imgui.begin_menu("Project"):
         if imgui.menu_item("Open ISO", "", False)[0]:
-            state.open_file_dialog = portable_file_dialogs.open_file("Select ISO", filters=["*.iso"])
+            state().open_file_dialog = portable_file_dialogs.open_file("Select ISO", filters=["*.iso"])
         imgui.end_menu()
 
-    if state.open_file_dialog is not None and state.open_file_dialog.ready():
-        files = state.open_file_dialog.result()
+    if state().open_file_dialog is not None and state().open_file_dialog.ready():
+        files = state().open_file_dialog.result()
         if files:
-            state.load_iso(Path(files[0]))
-        state.open_file_dialog = None
+            state().load_iso(Path(files[0]))
+        state().open_file_dialog = None
 
     imgui.text_disabled("Bai")
 
 
 def _pre_new_frame() -> None:
-    if state.pending_new_docks:
+    if state().reset_docks:
         params = hello_imgui.get_runner_params().docking_params
-        params.layout_reset = True  # fixme: this resets user modifications :(
-        params.dockable_windows = params.dockable_windows + state.pending_new_docks
-        state.pending_new_docks = []
+        params.dockable_windows = params.dockable_windows
+        state().reset_docks = False
 
 
 def run_gui(args: argparse.Namespace) -> None:
-    state.load_iso(args.iso)
+    state().load_iso(args.iso)
 
     runner_params = hello_imgui.RunnerParams()
     runner_params.callbacks.show_menus = _show_menu
@@ -97,6 +96,10 @@ def run_gui(args: argparse.Namespace) -> None:
         dockable_windows.append(window)
 
     add_dockable_window("File List", main_gui)
+    dockable_windows.append(state().mlvl_state.create_imgui_window())
+    dockable_windows.append(state().area_state.create_imgui_window())
+    dockable_windows.append(state().instance_state.create_imgui_window())
+
     runner_params.docking_params.dockable_windows = dockable_windows
 
     runner_params.docking_params.docking_splits = [

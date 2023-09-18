@@ -3,7 +3,8 @@ from __future__ import annotations
 import dataclasses
 import typing
 
-from retro_data_structures.formats.script_object import InstanceId
+if typing.TYPE_CHECKING:
+    from retro_data_structures.formats.script_object import InstanceId
 
 
 @dataclasses.dataclass(frozen=True)

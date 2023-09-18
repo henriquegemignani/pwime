@@ -4,18 +4,20 @@ import dataclasses
 import enum
 import typing
 
-from imgui_bundle import imgui, hello_imgui
+from imgui_bundle import hello_imgui, imgui
 from retro_data_structures.base_resource import AssetId
-from retro_data_structures.formats.script_object import ScriptInstance
+from retro_data_structures.formats.mrea import Area
 from retro_data_structures.properties.base_color import BaseColor
 from retro_data_structures.properties.base_property import BaseProperty
 from retro_data_structures.properties.base_vector import BaseVector
 
 from pwime.gui.gui_state import state
-from pwime.gui.references import PropReference, InstanceReference
+from pwime.gui.references import InstanceReference, PropReference
 
 if typing.TYPE_CHECKING:
-    from pwime.gui.area import AreaDockWindow
+    from retro_data_structures.formats.script_object import ScriptInstance
+
+    from pwime.gui.area import AreaState
 
 T = typing.TypeVar("T")
 
@@ -27,13 +29,13 @@ class PropertyRenderer(typing.Generic[T]):
 
     @classmethod
     def matches(cls, item: object, field: dataclasses.Field) -> typing.Self | None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def is_leaf(self) -> bool:
         return True
 
     def render(self, reference: PropReference) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class VectorRenderer(PropertyRenderer[BaseVector]):
@@ -91,7 +93,7 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
         if imgui.button(f"Select {types}"):
             pass
         imgui.same_line()
-        imgui.text(state.asset_manager.asset_names.get(self.item, f"{self.item:08X}"))
+        imgui.text(state().asset_manager.asset_names.get(self.item, f"{self.item:08X}"))
 
 
 def _enum_name(e: enum.Enum) -> str:
@@ -245,18 +247,39 @@ def render_property(props: BaseProperty, reference: PropReference) -> None:
             imgui.tree_pop()
 
 
-class ScriptInstanceDockWindow(hello_imgui.DockableWindow):
-    def __init__(self, parent: AreaDockWindow, instance: ScriptInstance):
-        super().__init__(
-            f"{instance.name} - {instance.id} ({parent.area.name})",
+class ScriptInstanceState(hello_imgui.DockableWindow):
+    instance_ref: tuple[Area, ScriptInstance] | None = None
+    window_label: str = "Object###ScriptInstance"
+
+    def create_imgui_window(self) -> hello_imgui.DockableWindow:
+        result = hello_imgui.DockableWindow(
+            self.window_label,
             "RightSpace",
-            gui_function_=self.render,
+            self.render,
+            is_visible_=False,
         )
-        self.parent = parent
-        self.instance = instance
+        result.include_in_view_menu = False
+        result.remember_is_visible = False
+        return result
+
+    def open_instance(self, area: Area, instance: ScriptInstance) -> None:
+        self.instance_ref = area, instance
+
+        window = hello_imgui.get_runner_params().docking_params.dockable_window_of_name(
+            self.window_label
+        )
+        window.is_visible = True
+
+        self.window_label = f"{instance.name} - {instance.id} ({area.name})###ScriptInstance"
+        window.label = self.window_label
 
     def render(self):
-        props = self.instance.get_properties()
+        if self.instance_ref is None:
+            return
+
+        area, instance = self.instance_ref
+
+        props = instance.get_properties()
 
         if imgui.begin_table("Properties", 3,
                              imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable):
@@ -266,6 +289,6 @@ class ScriptInstanceDockWindow(hello_imgui.DockableWindow):
             imgui.table_headers_row()
             render_property(props,
                             PropReference(
-                                InstanceReference(self.parent.area.mrea_asset_id, self.instance.id), ())
+                                InstanceReference(area.mrea_asset_id, instance.id), ())
                             )
             imgui.end_table()
