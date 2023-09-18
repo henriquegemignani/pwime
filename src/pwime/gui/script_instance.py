@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import enum
+import functools
 import typing
 
 from imgui_bundle import hello_imgui, imgui
@@ -11,7 +12,7 @@ from retro_data_structures.properties.base_color import BaseColor
 from retro_data_structures.properties.base_property import BaseProperty
 from retro_data_structures.properties.base_vector import BaseVector
 
-from pwime.gui.gui_state import state
+from pwime.gui.gui_state import state, FilteredAssetList
 from pwime.gui.references import InstanceReference, PropReference
 
 if typing.TYPE_CHECKING:
@@ -79,6 +80,10 @@ class GenericPropertyRenderer(PropertyRenderer[BaseProperty]):
         render_property(self.item, reference.append(self.field.name))
 
 
+
+cached_asset_list: FilteredAssetList = FilteredAssetList(frozenset(), "", [])
+
+
 class AssertIdRenderer(PropertyRenderer[AssetId]):
     """Renders the int as hex."""
 
@@ -89,11 +94,89 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
         return None
 
     def render(self, reference: PropReference) -> None:
-        types = ",".join(self.field.metadata["asset_types"])
-        if imgui.button(f"Select {types}"):
-            pass
+        if imgui.button("Change"):
+            imgui.open_popup("Select an asset")
+
         imgui.same_line()
         imgui.text(state().asset_manager.asset_names.get(self.item, f"{self.item:08X}"))
+
+        imgui.set_next_window_size(imgui.ImVec2(600, 400))
+        if imgui.begin_popup("Select an asset"):
+            asset_types = frozenset(self.field.metadata["asset_types"])
+            asset_manager = state().asset_manager
+
+            global cached_asset_list
+            asset_filter = imgui.input_text("Filter Assets", cached_asset_list.filter)[1]
+
+            if imgui.begin_table("All Assets", 2, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.scroll_y | imgui.TableFlags_.sortable):
+                imgui.table_setup_column("Asset Id", imgui.TableColumnFlags_.width_fixed)
+                imgui.table_setup_column("Name")
+
+                imgui.table_headers_row()
+
+                sort_spec = imgui.table_get_sort_specs()
+                if sort_spec.specs_dirty or (asset_types, asset_filter) != cached_asset_list[:2]:
+
+                    # Filter changed, re-filter list
+                    if (asset_types, asset_filter) != cached_asset_list[:2]:
+                        cached_asset_list = state().filtered_asset_list(asset_types, asset_filter)
+
+                    spec = sort_spec.get_specs(0)
+
+                    # Find the value to sort by.
+                    if spec.column_index == 0:
+                        def val(a: tuple[int, int]) -> int:
+                            return a[1]
+                    else:
+                        def val(a: tuple[int, int]) -> int:
+                            return asset_manager.asset_names.get(a[1], "<unknown>")
+
+                    # And the direction
+                    if spec.get_sort_direction() == imgui.SortDirection_.ascending.value:
+                        mul = 1
+                    else:
+                        mul = -1
+
+                    def sort_by_spec(a: tuple[int, int], b: tuple[int, int]) -> int:
+                        a_val = val(a)
+                        b_val = val(b)
+                        if a_val < b_val:
+                            return -mul
+                        if a_val == b_val:
+                            return 0
+                        return mul
+
+                    indices = list(enumerate(cached_asset_list.ids))
+                    indices.sort(key=functools.cmp_to_key(sort_by_spec))
+                    cached_asset_list = FilteredAssetList(cached_asset_list.types, asset_filter, [
+                        cached_asset_list.ids[i]
+                        for i, _ in indices
+                    ])
+                    sort_spec.specs_dirty = False
+
+                clipper = imgui.ListClipper()
+                clipper.begin(len(cached_asset_list.ids))
+                while clipper.step():
+                    for index in range(clipper.display_start, clipper.display_end):
+                        asset = cached_asset_list.ids[index]
+                        # for asset in self.cached_asset_list.ids:
+                        imgui.table_next_row()
+
+                        imgui.table_next_column()
+                        if imgui.selectable(
+                                f"{asset:08X}",
+                                False,
+                                imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
+                        )[1]:
+                            pass
+                            # imgui.close_current_popup()
+
+                        imgui.table_next_column()
+                        imgui.text_disabled(asset_manager.asset_names.get(asset, "<unknown>"))
+
+                imgui.end_table()
+
+            imgui.end_popup()
 
 
 def _enum_name(e: enum.Enum) -> str:
@@ -241,7 +324,9 @@ def render_property(props: BaseProperty, reference: PropReference) -> None:
         imgui.table_next_column()
 
         if renderer.is_leaf():
+            imgui.push_id(field.name)
             renderer.render(reference)
+            imgui.pop_id()
         elif is_open:
             renderer.render(reference)
             imgui.tree_pop()

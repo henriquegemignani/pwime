@@ -58,10 +58,10 @@ def _show_menu() -> None:
 
 
 def _pre_new_frame() -> None:
-    if state().reset_docks:
+    if state().pending_windows:
         params = hello_imgui.get_runner_params().docking_params
-        params.dockable_windows = params.dockable_windows
-        state().reset_docks = False
+        params.dockable_windows = params.dockable_windows + state().pending_windows
+        state().pending_windows = []
 
 
 def run_gui(args: argparse.Namespace) -> None:
