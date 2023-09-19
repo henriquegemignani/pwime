@@ -38,8 +38,8 @@ class GuiState:
     selected_asset: int | None = None
     pending_windows: list[hello_imgui.DockableWindow] = dataclasses.field(default_factory=list)
 
-    def load_iso(self, path: Path):
-        self.asset_manager = OurAssetManager(IsoFileProvider(path), Game.ECHOES)
+    def load_iso(self, path: Path, game: Game):
+        self.asset_manager = OurAssetManager(IsoFileProvider(path), game)
 
         global_file_types = {
             "MLVL",

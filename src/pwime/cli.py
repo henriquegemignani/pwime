@@ -1,9 +1,26 @@
 import argparse
+import typing
 from pathlib import Path
+
+from retro_data_structures.game_check import Game
+
+
+def game_argument_type(s: str) -> Game:
+    try:
+        return Game(int(s))
+    except ValueError:
+        # not a number, look by name
+        for g in Game:
+            g = typing.cast(Game, g)
+            if g.name.lower() == s.lower():
+                return g
+        raise ValueError(f"No enum named {s} found")
 
 
 def add_gui_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--iso", type=Path, help="Automatically load the given ISO")
+    parser.add_argument("--game", type=game_argument_type, choices=list(Game),
+                        default=Game.ECHOES, help="Which game to load from target ISO")
 
     from pwime.gui.imgui_main import run_gui
 

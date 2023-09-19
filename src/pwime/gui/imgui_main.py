@@ -4,6 +4,7 @@ import typing
 from pathlib import Path
 
 from imgui_bundle import hello_imgui, imgui, immapp, portable_file_dialogs
+from retro_data_structures.game_check import Game
 
 from pwime.gui.gui_state import state
 
@@ -51,7 +52,7 @@ def _show_menu() -> None:
     if state().open_file_dialog is not None and state().open_file_dialog.ready():
         files = state().open_file_dialog.result()
         if files:
-            state().load_iso(Path(files[0]))
+            state().load_iso(Path(files[0]), Game.ECHOES)
         state().open_file_dialog = None
 
     imgui.text_disabled("Bai")
@@ -65,7 +66,8 @@ def _pre_new_frame() -> None:
 
 
 def run_gui(args: argparse.Namespace) -> None:
-    state().load_iso(args.iso)
+    if args.iso:
+        state().load_iso(args.iso, args.game)
 
     runner_params = hello_imgui.RunnerParams()
     runner_params.callbacks.show_menus = _show_menu
