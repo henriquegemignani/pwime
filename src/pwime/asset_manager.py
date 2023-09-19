@@ -21,7 +21,7 @@ class OurAssetManager(AssetManager):
         super().__init__(provider, target_game)
         self.memory_files = {}
 
-        asset_names_path = Path(__file__).parents[1].joinpath("asset_names", f"{target_game.name}.json")
+        asset_names_path = Path(__file__).parent.joinpath("asset_names", f"{target_game.name}.json")
         try:
             with asset_names_path.open() as f:
                 name_to_id: dict = json.load(f)

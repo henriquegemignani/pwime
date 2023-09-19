@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from imgui_bundle import hello_imgui, imgui
 
 from pwime.gui.gui_state import state
-from pwime.gui.script_instance import ScriptInstanceState
 
 if TYPE_CHECKING:
     from retro_data_structures.formats.mrea import Area

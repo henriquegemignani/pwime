@@ -7,18 +7,16 @@ import typing
 
 from imgui_bundle import hello_imgui, imgui
 from retro_data_structures.base_resource import AssetId
-from retro_data_structures.formats.mrea import Area
 from retro_data_structures.properties.base_color import BaseColor
-from retro_data_structures.properties.base_property import BaseProperty
+from retro_data_structures.properties.base_property import BaseProperty, BaseObjectType
 from retro_data_structures.properties.base_vector import BaseVector
 
-from pwime.gui.gui_state import state, FilteredAssetList
-from pwime.gui.references import InstanceReference, PropReference
+from pwime.gui.gui_state import FilteredAssetList, state
+from pwime.operations.script_instance import InstanceReference, PropReference, ScriptInstancePropertyEdit, get_instance
 
 if typing.TYPE_CHECKING:
+    from retro_data_structures.formats.mrea import Area
     from retro_data_structures.formats.script_object import ScriptInstance
-
-    from pwime.gui.area import AreaState
 
 T = typing.TypeVar("T")
 
@@ -51,6 +49,10 @@ class VectorRenderer(PropertyRenderer[BaseVector]):
         imgui.input_float3(f"##{self.field.name}", v)
 
 
+def get_type_of(instance: InstanceReference) -> type[BaseObjectType]:
+    return get_instance(state().asset_manager, instance).type
+
+
 class ColorRenderer(PropertyRenderer[BaseColor]):
     @classmethod
     def matches(cls, item: object, field: dataclasses.Field) -> typing.Self | None:
@@ -60,7 +62,13 @@ class ColorRenderer(PropertyRenderer[BaseColor]):
 
     def render(self, reference: PropReference) -> None:
         v = [self.item.r, self.item.g, self.item.b, self.item.a]
-        imgui.color_edit4(f"##{self.field.name}", v)
+
+        modified, new_value = imgui.color_edit4(f"##{self.field.name}", v)
+        if modified:
+            value = type(self.item)(*new_value)
+            state().project.add_new_operation(ScriptInstancePropertyEdit(
+                reference, get_type_of(reference.instance), value,
+            ))
 
 
 class GenericPropertyRenderer(PropertyRenderer[BaseProperty]):
@@ -77,7 +85,7 @@ class GenericPropertyRenderer(PropertyRenderer[BaseProperty]):
 
     def render(self, reference: PropReference) -> None:
         imgui.text("--")
-        render_property(self.item, reference.append(self.field.name))
+        render_property(self.item, reference)
 
 
 
@@ -105,7 +113,7 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
             asset_types = frozenset(self.field.metadata["asset_types"])
             asset_manager = state().asset_manager
 
-            global cached_asset_list
+            global cached_asset_list  # noqa: PLW0603
             asset_filter = imgui.input_text("Filter Assets", cached_asset_list.filter)[1]
 
             if imgui.begin_table("All Assets", 2, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.scroll_y | imgui.TableFlags_.sortable):
@@ -325,10 +333,10 @@ def render_property(props: BaseProperty, reference: PropReference) -> None:
 
         if renderer.is_leaf():
             imgui.push_id(field.name)
-            renderer.render(reference)
+            renderer.render(reference.append(field.name))
             imgui.pop_id()
         elif is_open:
-            renderer.render(reference)
+            renderer.render(reference.append(field.name))
             imgui.tree_pop()
 
 
@@ -366,6 +374,8 @@ class ScriptInstanceState(hello_imgui.DockableWindow):
 
         props = instance.get_properties()
 
+        mlvl_id = state().mlvl_state.mlvl_id
+
         if imgui.begin_table("Properties", 3,
                              imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable):
             imgui.table_setup_column("Name")
@@ -374,6 +384,6 @@ class ScriptInstanceState(hello_imgui.DockableWindow):
             imgui.table_headers_row()
             render_property(props,
                             PropReference(
-                                InstanceReference(area.mrea_asset_id, instance.id), ())
+                                InstanceReference(mlvl_id, area.mrea_asset_id, instance.id), ())
                             )
             imgui.end_table()

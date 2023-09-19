@@ -5,19 +5,20 @@ import functools
 import typing
 from typing import TYPE_CHECKING
 
-from imgui_bundle._imgui_bundle import hello_imgui
 from retro_data_structures.asset_manager import IsoFileProvider
-from retro_data_structures.game_check import Game
 
-from pwime.gui.asset_manager import OurAssetManager
+from pwime.asset_manager import OurAssetManager
+from pwime.project import Project
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from imgui_bundle import portable_file_dialogs
+    from imgui_bundle._imgui_bundle import hello_imgui
+    from retro_data_structures.game_check import Game
 
-    from pwime.gui.mlvl import MlvlState
     from pwime.gui.area import AreaState
+    from pwime.gui.mlvl import MlvlState
     from pwime.gui.script_instance import ScriptInstanceState
 
 
@@ -32,14 +33,20 @@ class GuiState:
     mlvl_state: MlvlState
     area_state: AreaState
     instance_state: ScriptInstanceState
-    asset_manager: OurAssetManager | None = None
+    project: Project | None = None
     global_file_list: tuple[int, ...] = ()
     open_file_dialog: portable_file_dialogs.open_file = None
     selected_asset: int | None = None
     pending_windows: list[hello_imgui.DockableWindow] = dataclasses.field(default_factory=list)
 
+    @property
+    def asset_manager(self) -> OurAssetManager | None:
+        if self.project is None:
+            return None
+        return self.project.asset_manager
+
     def load_iso(self, path: Path, game: Game):
-        self.asset_manager = OurAssetManager(IsoFileProvider(path), game)
+        self.project = Project(OurAssetManager(IsoFileProvider(path), game))
 
         global_file_types = {
             "MLVL",
@@ -62,7 +69,7 @@ class GuiState:
 
 @functools.cache
 def state() -> GuiState:
-    from pwime.gui.mlvl import MlvlState
     from pwime.gui.area import AreaState
+    from pwime.gui.mlvl import MlvlState
     from pwime.gui.script_instance import ScriptInstanceState
     return GuiState(MlvlState(), AreaState(), ScriptInstanceState())

@@ -4,12 +4,12 @@ from imgui_bundle import hello_imgui, imgui
 from retro_data_structures.exceptions import UnknownAssetId
 from retro_data_structures.formats import Mlvl
 
-from pwime.gui.area import AreaState
 from pwime.gui.gui_state import state
 
 
 class MlvlState:
     mlvl: Mlvl | None = None
+    mlvl_id: int | None = None
     window_label: str = "World###MLVL"
 
     def create_imgui_window(self) -> hello_imgui.DockableWindow:
@@ -25,6 +25,7 @@ class MlvlState:
 
     def open_mlvl(self, mlvl_id: int) -> None:
         self.mlvl = state().asset_manager.get_file(mlvl_id, Mlvl)
+        self.mlvl_id = mlvl_id
 
         window = hello_imgui.get_runner_params().docking_params.dockable_window_of_name(
             self.window_label
