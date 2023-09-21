@@ -45,6 +45,7 @@ class ScriptInstancePropertyEdit(Operation, typing.Generic[PropType]):
     reference: PropReference
     prop_type: type[PropType]
     new_value: object
+    old_value: object
 
     def __init__(self, reference: PropReference, prop_type: type[PropType], new_value: object):
         self.reference = reference
@@ -58,4 +59,22 @@ class ScriptInstancePropertyEdit(Operation, typing.Generic[PropType]):
         with instance.edit_properties(self.prop_type) as prop:
             for path in self.reference.path[:-1]:
                 prop = getattr(prop, path)
+
+            self.old_value = getattr(prop, self.reference.path[-1])
             setattr(prop, self.reference.path[-1], self.new_value)
+
+    def undo(self, project: Project) -> None:
+        """Reverts the change."""
+        instance = get_instance(project.asset_manager, self.reference.instance)
+
+        with instance.edit_properties(self.prop_type) as prop:
+            for path in self.reference.path[:-1]:
+                prop = getattr(prop, path)
+
+            setattr(prop, self.reference.path[-1], self.old_value)
+
+    def overwrites_operation(self, operation: Operation) -> bool:
+        """Yes if changing the same field of the same object."""
+        if isinstance(operation, ScriptInstancePropertyEdit):
+            return self.reference == operation.reference
+        return False

@@ -16,9 +16,15 @@ class Operation(ABC):
         raise NotImplementedError
 
     def undo(self, project: Project) -> None:
-        """Reverts what `perform` did. Assumes no other changes were made afterward."""
+        """Reverts what `perform` did. Assumes no other changes were made afterward.
+        Can only be called after perform."""
         raise NotImplementedError
 
     def to_json(self) -> JsonObject:
         """Serializes this operation to a Json."""
+        raise NotImplementedError
+
+    def overwrites_operation(self, operation: Operation) -> bool:
+        """True, if the results of this operation completely overwrites the results of given operation.
+        For when the user quickly does similar actions in a row, such as changing the same field to multiple values."""
         raise NotImplementedError
