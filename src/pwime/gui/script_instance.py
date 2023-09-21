@@ -22,11 +22,13 @@ T = typing.TypeVar("T")
 
 
 def submit_edit_for(reference: PropReference, new_value: object) -> None:
-    state().project.add_new_operation(ScriptInstancePropertyEdit(
-        reference,
-        get_instance(state().asset_manager, reference.instance).type,
-        new_value,
-    ))
+    state().project.add_new_operation(
+        ScriptInstancePropertyEdit(
+            reference,
+            get_instance(state().asset_manager, reference.instance).type,
+            new_value,
+        )
+    )
 
 
 def submit_imgui_results(reference: PropReference, imgui_result: tuple[bool, object]) -> None:
@@ -125,8 +127,14 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
             global cached_asset_list  # noqa: PLW0603
             asset_filter = imgui.input_text("Filter Assets", cached_asset_list.filter)[1]
 
-            if imgui.begin_table("All Assets", 2,
-                                 imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.scroll_y | imgui.TableFlags_.sortable):
+            if imgui.begin_table(
+                "All Assets",
+                2,
+                imgui.TableFlags_.row_bg
+                | imgui.TableFlags_.borders_h
+                | imgui.TableFlags_.scroll_y
+                | imgui.TableFlags_.sortable,
+            ):
                 imgui.table_setup_column("Asset Id", imgui.TableColumnFlags_.width_fixed)
                 imgui.table_setup_column("Name")
 
@@ -134,7 +142,6 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
 
                 sort_spec = imgui.table_get_sort_specs()
                 if sort_spec.specs_dirty or (asset_types, asset_filter) != cached_asset_list[:2]:
-
                     # Filter changed, re-filter list
                     if (asset_types, asset_filter) != cached_asset_list[:2]:
                         cached_asset_list = state().filtered_asset_list(asset_types, asset_filter)
@@ -143,9 +150,12 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
 
                     # Find the value to sort by.
                     if spec.column_index == 0:
+
                         def val(a: tuple[int, int]) -> int:
                             return a[1]
+
                     else:
+
                         def val(a: tuple[int, int]) -> int:
                             return asset_manager.asset_names.get(a[1], "ZZZZZZZZZZ")  # sort last!
 
@@ -166,10 +176,9 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
 
                     indices = list(enumerate(cached_asset_list.ids))
                     indices.sort(key=functools.cmp_to_key(sort_by_spec))
-                    cached_asset_list = FilteredAssetList(cached_asset_list.types, asset_filter, [
-                        cached_asset_list.ids[i]
-                        for i, _ in indices
-                    ])
+                    cached_asset_list = FilteredAssetList(
+                        cached_asset_list.types, asset_filter, [cached_asset_list.ids[i] for i, _ in indices]
+                    )
                     sort_spec.specs_dirty = False
 
                 clipper = imgui.ListClipper()
@@ -182,9 +191,9 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
 
                         imgui.table_next_column()
                         if imgui.selectable(
-                                f"{asset:08X}",
-                                False,
-                                imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
+                            f"{asset:08X}",
+                            False,
+                            imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
                         )[1]:
                             submit_edit_for(reference, asset)
                             imgui.close_current_popup()
@@ -395,9 +404,7 @@ class ScriptInstanceState(hello_imgui.DockableWindow):
     def open_instance(self, area: Area, instance: ScriptInstance) -> None:
         self.instance_ref = area, instance
 
-        window = hello_imgui.get_runner_params().docking_params.dockable_window_of_name(
-            self.window_label
-        )
+        window = hello_imgui.get_runner_params().docking_params.dockable_window_of_name(self.window_label)
         window.is_visible = True
 
         self.window_label = f"{instance.name} - {instance.id} ({area.name})###ScriptInstance"
@@ -413,14 +420,12 @@ class ScriptInstanceState(hello_imgui.DockableWindow):
 
         mlvl_id = state().mlvl_state.mlvl_id
 
-        if imgui.begin_table("Properties", 3,
-                             imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable):
+        if imgui.begin_table(
+            "Properties", 3, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable
+        ):
             imgui.table_setup_column("Name")
             imgui.table_setup_column("Type")
             imgui.table_setup_column("Value")
             imgui.table_headers_row()
-            render_property(props,
-                            PropReference(
-                                InstanceReference(mlvl_id, area.mrea_asset_id, instance.id), ())
-                            )
+            render_property(props, PropReference(InstanceReference(mlvl_id, area.mrea_asset_id, instance.id), ()))
             imgui.end_table()

@@ -29,9 +29,7 @@ class AreaState(hello_imgui.DockableWindow):
     def open_area(self, area: Area) -> None:
         self.area = area
 
-        window = hello_imgui.get_runner_params().docking_params.dockable_window_of_name(
-            self.window_label
-        )
+        window = hello_imgui.get_runner_params().docking_params.dockable_window_of_name(self.window_label)
         window.is_visible = True
 
         self.window_label = f"{self.area.name}###Area"
@@ -45,8 +43,9 @@ class AreaState(hello_imgui.DockableWindow):
         if changed:
             self.filter = new_text
 
-        if imgui.begin_table("Objects", 4,
-                             imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable):
+        if imgui.begin_table(
+            "Objects", 4, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable
+        ):
             imgui.table_setup_column("Layer", imgui.TableColumnFlags_.width_fixed)
             imgui.table_setup_column("Instance Id", imgui.TableColumnFlags_.width_fixed)
             imgui.table_setup_column("Type", imgui.TableColumnFlags_.width_fixed)
@@ -72,9 +71,9 @@ class AreaState(hello_imgui.DockableWindow):
                     imgui.text(type_name)
                     imgui.table_next_column()
                     if imgui.selectable(
-                            f"{instance_name}##{instance.id}",
-                            False,
-                            imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
+                        f"{instance_name}##{instance.id}",
+                        False,
+                        imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
                     )[1]:
                         state().instance_state.open_instance(self.area, instance)
 

@@ -25,7 +25,9 @@ class Project:
         now = datetime.datetime.now()
         if self.performed_operations:
             last_op = self.performed_operations[-1]
-            if now - last_op.moment < self._threshold_to_overwrite and operation.overwrites_operation(last_op.operation):
+            if now - last_op.moment < self._threshold_to_overwrite and operation.overwrites_operation(
+                last_op.operation
+            ):
                 last_op.operation.undo(self)
                 self.performed_operations.pop()
 

@@ -27,9 +27,7 @@ class MlvlState:
         self.mlvl = state().asset_manager.get_file(mlvl_id, Mlvl)
         self.mlvl_id = mlvl_id
 
-        window = hello_imgui.get_runner_params().docking_params.dockable_window_of_name(
-            self.window_label
-        )
+        window = hello_imgui.get_runner_params().docking_params.dockable_window_of_name(self.window_label)
         window.is_visible = True
 
         try:
@@ -60,9 +58,9 @@ class MlvlState:
 
                 imgui.table_next_column()
                 if imgui.selectable(
-                        f"{area.mrea_asset_id:08X}",
-                        False,
-                        imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
+                    f"{area.mrea_asset_id:08X}",
+                    False,
+                    imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
                 )[1]:
                     state().area_state.open_area(area)
 

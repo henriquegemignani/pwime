@@ -26,10 +26,7 @@ class OurAssetManager(AssetManager):
             with asset_names_path.open() as f:
                 name_to_id: dict = json.load(f)
 
-            self.asset_names = {
-                asset_id: name
-                for name, asset_id in name_to_id.items()
-            }
+            self.asset_names = {asset_id: name for name, asset_id in name_to_id.items()}
 
         except FileNotFoundError:
             self.asset_names = {}

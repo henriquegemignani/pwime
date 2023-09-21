@@ -19,8 +19,13 @@ def game_argument_type(s: str) -> Game:
 
 def add_gui_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--iso", type=Path, help="Automatically load the given ISO")
-    parser.add_argument("--game", type=game_argument_type, choices=list(Game),
-                        default=Game.ECHOES, help="Which game to load from target ISO")
+    parser.add_argument(
+        "--game",
+        type=game_argument_type,
+        choices=list(Game),
+        default=Game.ECHOES,
+        help="Which game to load from target ISO",
+    )
 
     from pwime.gui.imgui_main import run_gui
 

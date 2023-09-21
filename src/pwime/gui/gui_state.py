@@ -63,9 +63,10 @@ class GuiState:
             [
                 asset
                 for asset in self.asset_manager.all_asset_ids()
-                if self.asset_manager.get_asset_type(asset) in asset_types and (
-                    not name_filter or name_filter in self.asset_manager.asset_names.get(asset, "<unknown>")
-            )])
+                if self.asset_manager.get_asset_type(asset) in asset_types
+                and (not name_filter or name_filter in self.asset_manager.asset_names.get(asset, "<unknown>"))
+            ],
+        )
 
 
 @functools.cache
@@ -73,4 +74,5 @@ def state() -> GuiState:
     from pwime.gui.area import AreaState
     from pwime.gui.mlvl import MlvlState
     from pwime.gui.script_instance import ScriptInstanceState
+
     return GuiState(MlvlState(), AreaState(), ScriptInstanceState())
