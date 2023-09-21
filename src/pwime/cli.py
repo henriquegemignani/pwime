@@ -37,9 +37,9 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def run_cli(argv: list[str]) -> None:
-    args = argv[1:]
-    if not args:
-        args = ["gui"]
+    argv = argv[1:]
+    if not argv:
+        argv = ["gui"]
 
-    args = create_parser().parse_args(args)
+    args = create_parser().parse_args(argv)
     args.func(args)

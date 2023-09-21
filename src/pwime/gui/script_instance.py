@@ -8,7 +8,7 @@ import typing
 from imgui_bundle import hello_imgui, imgui
 from retro_data_structures.base_resource import AssetId
 from retro_data_structures.properties.base_color import BaseColor
-from retro_data_structures.properties.base_property import BaseProperty, BaseObjectType
+from retro_data_structures.properties.base_property import BaseProperty
 from retro_data_structures.properties.base_vector import BaseVector
 
 from pwime.gui.gui_state import FilteredAssetList, state
@@ -19,6 +19,19 @@ if typing.TYPE_CHECKING:
     from retro_data_structures.formats.script_object import ScriptInstance
 
 T = typing.TypeVar("T")
+
+
+def submit_edit_for(reference: PropReference, new_value: object) -> None:
+    state().project.add_new_operation(ScriptInstancePropertyEdit(
+        reference,
+        get_instance(state().asset_manager, reference.instance).type,
+        new_value,
+    ))
+
+
+def submit_imgui_results(reference: PropReference, imgui_result: tuple[bool, object]) -> None:
+    if imgui_result[0]:
+        submit_edit_for(reference, imgui_result[1])
 
 
 class PropertyRenderer(typing.Generic[T]):
@@ -46,14 +59,14 @@ class VectorRenderer(PropertyRenderer[BaseVector]):
 
     def render(self, reference: PropReference) -> None:
         v = [self.item.x, self.item.y, self.item.z]
-        imgui.input_float3(f"##{self.field.name}", v)
-
-
-def get_type_of(instance: InstanceReference) -> type[BaseObjectType]:
-    return get_instance(state().asset_manager, instance).type
+        modified, new_value = imgui.input_float3(f"##{self.field.name}", v)
+        if modified:
+            submit_edit_for(reference, type(self.item)(*new_value))
 
 
 class ColorRenderer(PropertyRenderer[BaseColor]):
+    color_cls: type[BaseColor]
+
     @classmethod
     def matches(cls, item: object, field: dataclasses.Field) -> typing.Self | None:
         if isinstance(item, BaseColor):
@@ -65,10 +78,7 @@ class ColorRenderer(PropertyRenderer[BaseColor]):
 
         modified, new_value = imgui.color_edit4(f"##{self.field.name}", v)
         if modified:
-            value = type(self.item)(*new_value)
-            state().project.add_new_operation(ScriptInstancePropertyEdit(
-                reference, get_type_of(reference.instance), value,
-            ))
+            submit_edit_for(reference, type(self.item)(*new_value))
 
 
 class GenericPropertyRenderer(PropertyRenderer[BaseProperty]):
@@ -86,7 +96,6 @@ class GenericPropertyRenderer(PropertyRenderer[BaseProperty]):
     def render(self, reference: PropReference) -> None:
         imgui.text("--")
         render_property(self.item, reference)
-
 
 
 cached_asset_list: FilteredAssetList = FilteredAssetList(frozenset(), "", [])
@@ -116,7 +125,8 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
             global cached_asset_list  # noqa: PLW0603
             asset_filter = imgui.input_text("Filter Assets", cached_asset_list.filter)[1]
 
-            if imgui.begin_table("All Assets", 2, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.scroll_y | imgui.TableFlags_.sortable):
+            if imgui.begin_table("All Assets", 2,
+                                 imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.scroll_y | imgui.TableFlags_.sortable):
                 imgui.table_setup_column("Asset Id", imgui.TableColumnFlags_.width_fixed)
                 imgui.table_setup_column("Name")
 
@@ -137,7 +147,7 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
                             return a[1]
                     else:
                         def val(a: tuple[int, int]) -> int:
-                            return asset_manager.asset_names.get(a[1], "<unknown>")
+                            return asset_manager.asset_names.get(a[1], "ZZZZZZZZZZ")  # sort last!
 
                     # And the direction
                     if spec.get_sort_direction() == imgui.SortDirection_.ascending.value:
@@ -176,8 +186,8 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
                                 False,
                                 imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
                         )[1]:
-                            pass
-                            # imgui.close_current_popup()
+                            submit_edit_for(reference, asset)
+                            imgui.close_current_popup()
 
                         imgui.table_next_column()
                         imgui.text_disabled(asset_manager.asset_names.get(asset, "<unknown>"))
@@ -205,7 +215,9 @@ class IntEnumRenderer(PropertyRenderer[enum.IntEnum]):
 
     def render(self, reference: PropReference) -> None:
         all_values = [_enum_name(it) for it in self.item.__class__]
-        imgui.combo(f"##{self.field.name}", self.item.value, all_values)
+        changed, selected = imgui.combo(f"##{self.field.name}", self.item.value, all_values)
+        if changed:
+            submit_edit_for(reference, all_values[selected])
 
 
 class IntFlagRenderer(PropertyRenderer[enum.IntFlag]):
@@ -218,10 +230,22 @@ class IntFlagRenderer(PropertyRenderer[enum.IntFlag]):
         return None
 
     def render(self, reference: PropReference) -> None:
+        new_value = None
+
         if imgui.begin_combo(f"##{self.field.name}", self.item.name):
             for alt in self.item.__class__:
-                imgui.checkbox(_enum_name(alt), alt in self.item)
+                changed, check = imgui.checkbox(_enum_name(alt), alt in self.item)
+                if changed:
+                    assert new_value is None
+                    if check:
+                        new_value = self.item | alt
+                    else:
+                        new_value = self.item & ~alt
+
             imgui.end_combo()
+
+        if new_value is not None:
+            submit_edit_for(reference, new_value)
 
 
 class FloatRenderer(PropertyRenderer[float]):
@@ -234,7 +258,10 @@ class FloatRenderer(PropertyRenderer[float]):
         return None
 
     def render(self, reference: PropReference) -> None:
-        imgui.input_float(f"##{self.field.name}", self.item)
+        submit_imgui_results(
+            reference,
+            imgui.input_float(f"##{self.field.name}", self.item),
+        )
 
 
 class StringRenderer(PropertyRenderer[str]):
@@ -247,7 +274,10 @@ class StringRenderer(PropertyRenderer[str]):
         return None
 
     def render(self, reference: PropReference) -> None:
-        imgui.input_text(f"##{self.field.name}", self.item)
+        submit_imgui_results(
+            reference,
+            imgui.input_text(f"##{self.field.name}", self.item),
+        )
 
 
 class BoolRenderer(PropertyRenderer[bool]):
@@ -260,7 +290,10 @@ class BoolRenderer(PropertyRenderer[bool]):
         return None
 
     def render(self, reference: PropReference) -> None:
-        imgui.checkbox(f"##{self.field.name}", self.item)
+        submit_imgui_results(
+            reference,
+            imgui.checkbox(f"##{self.field.name}", self.item),
+        )
 
 
 class IntRenderer(PropertyRenderer[int]):
@@ -273,7 +306,10 @@ class IntRenderer(PropertyRenderer[int]):
         return None
 
     def render(self, reference: PropReference) -> None:
-        imgui.input_int(f"##{self.field.name}", self.item)
+        submit_imgui_results(
+            reference,
+            imgui.input_int(f"##{self.field.name}", self.item),
+        )
 
 
 class UnknownPropertyRenderer(PropertyRenderer):
@@ -303,6 +339,7 @@ ALL_PROPERTY_RENDERERS = [
 
 
 def render_property(props: BaseProperty, reference: PropReference) -> None:
+    assert dataclasses.is_dataclass(props)
     for field in dataclasses.fields(props):
         imgui.table_next_row()
         imgui.table_next_column()

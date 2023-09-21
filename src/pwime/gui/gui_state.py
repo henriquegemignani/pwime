@@ -46,13 +46,14 @@ class GuiState:
         return self.project.asset_manager
 
     def load_iso(self, path: Path, game: Game):
-        self.project = Project(OurAssetManager(IsoFileProvider(path), game))
+        manager = OurAssetManager(IsoFileProvider(path), game)
+        self.project = Project(manager)
 
         global_file_types = {
             "MLVL",
         }
         self.global_file_list = tuple(
-            i for i in self.asset_manager.all_asset_ids() if self.asset_manager.get_asset_type(i) in global_file_types
+            i for i in manager.all_asset_ids() if manager.get_asset_type(i) in global_file_types
         )
 
     def filtered_asset_list(self, asset_types: frozenset[str], name_filter: str) -> FilteredAssetList:

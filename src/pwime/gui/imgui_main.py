@@ -13,7 +13,8 @@ if typing.TYPE_CHECKING:
 
 
 def main_gui() -> None:
-    if state().asset_manager is not None:
+    asset_manager = state().asset_manager
+    if asset_manager is not None:
         if imgui.begin_table("All Assets", 3, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h):
             imgui.table_setup_column("Type", imgui.TableColumnFlags_.width_fixed)
             imgui.table_setup_column("Asset Id", imgui.TableColumnFlags_.width_fixed)
@@ -25,7 +26,7 @@ def main_gui() -> None:
                 imgui.table_next_row()
 
                 imgui.table_next_column()
-                imgui.text(state().asset_manager.get_asset_type(i))
+                imgui.text(asset_manager.get_asset_type(i))
 
                 imgui.table_next_column()
                 if imgui.selectable(
@@ -36,7 +37,7 @@ def main_gui() -> None:
                     state().mlvl_state.open_mlvl(i)
 
                 imgui.table_next_column()
-                imgui.text_disabled(state().asset_manager.asset_names.get(i, "<unknown>"))
+                imgui.text_disabled(asset_manager.asset_names.get(i, "<unknown>"))
 
             imgui.end_table()
     else:

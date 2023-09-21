@@ -10,9 +10,7 @@ from pwime.operations.base import Operation
 from pwime.project import Project
 
 if typing.TYPE_CHECKING:
-    from retro_data_structures.formats.script_object import InstanceId, ScriptInstance, PropertyType
-
-    from pwime.util.json_lib import JsonValue
+    from retro_data_structures.formats.script_object import InstanceId, ScriptInstance
 
 
 @dataclasses.dataclass(frozen=True)
@@ -27,7 +25,7 @@ class PropReference:
     instance: InstanceReference
     path: tuple[str, ...]
 
-    def append(self, field: str) -> typing.Self:
+    def append(self, field: str) -> PropReference:
         return PropReference(self.instance, self.path + (field,))
 
 
@@ -38,14 +36,17 @@ def get_instance(manager: OurAssetManager, reference: InstanceReference) -> Scri
     return area.get_instance(reference.instance_id)
 
 
-class ScriptInstancePropertyEdit(Operation):
+PropType = typing.TypeVar("PropType")
+
+
+class ScriptInstancePropertyEdit(Operation, typing.Generic[PropType]):
     """Represents changing a property of an existing script object."""
 
     reference: PropReference
-    prop_type: type[PropertyType]
+    prop_type: type[PropType]
     new_value: object
 
-    def __init__(self, reference: PropReference, prop_type: type[PropertyType], new_value: object):
+    def __init__(self, reference: PropReference, prop_type: type[PropType], new_value: object):
         self.reference = reference
         self.prop_type = prop_type
         self.new_value = new_value
