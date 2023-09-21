@@ -27,6 +27,7 @@ dependencies = [
 
     # UI things
     "imgui-bundle",
+    "humanize",
 ]
 
 [project.readme]

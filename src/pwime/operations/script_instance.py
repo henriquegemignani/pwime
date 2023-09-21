@@ -78,3 +78,9 @@ class ScriptInstancePropertyEdit(Operation, typing.Generic[PropType]):
         if isinstance(operation, ScriptInstancePropertyEdit):
             return self.reference == operation.reference
         return False
+
+    def describe(self) -> str:
+        return (
+            f"Edited field {'.'.join(self.reference.path)} of `{self.reference.instance.instance_id}`,"
+            f" a {self.prop_type.__name__}"
+        )

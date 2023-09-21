@@ -28,3 +28,7 @@ class Operation(ABC):
         """True, if the results of this operation completely overwrites the results of given operation.
         For when the user quickly does similar actions in a row, such as changing the same field to multiple values."""
         raise NotImplementedError
+
+    def describe(self) -> str:
+        """Human-readable description of this operation. For use in the history tab."""
+        raise NotImplementedError

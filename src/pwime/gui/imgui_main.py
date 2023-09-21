@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import datetime
 import typing
 from pathlib import Path
 
+import humanize
 from imgui_bundle import hello_imgui, imgui, immapp, portable_file_dialogs
 from retro_data_structures.game_check import Game
 
@@ -30,9 +32,9 @@ def main_gui() -> None:
 
                 imgui.table_next_column()
                 if imgui.selectable(
-                        f"{i:08X}",
-                        False,
-                        imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
+                    f"{i:08X}",
+                    False,
+                    imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
                 )[1]:
                     state().mlvl_state.open_mlvl(i)
 
@@ -42,6 +44,33 @@ def main_gui() -> None:
             imgui.end_table()
     else:
         imgui.text("No ISO loaded. Open one in the Projects menu above.")
+
+
+def render_history() -> None:
+    project = state().project
+    if project is not None:
+        if imgui.begin_table(
+            "History", 2, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.reorderable
+        ):
+            imgui.table_setup_column("When", imgui.TableColumnFlags_.width_fixed)
+            imgui.table_setup_column("Action", imgui.TableColumnFlags_.width_fixed)
+
+            imgui.table_headers_row()
+
+            now = datetime.datetime.now()
+
+            for op in project.performed_operations:
+                imgui.table_next_row()
+
+                imgui.table_next_column()
+                imgui.text(humanize.naturaltime(op.moment, when=now))
+
+                imgui.table_next_column()
+                imgui.text(op.operation.describe())
+
+            imgui.end_table()
+    else:
+        imgui.text("No project loaded..")
 
 
 def _show_menu() -> None:
@@ -91,24 +120,24 @@ def run_gui(args: argparse.Namespace) -> None:
     #
     dockable_windows: list[hello_imgui.DockableWindow] = []
 
-    def add_dockable_window(label: str, demo_gui: typing.Callable[[], None]):
+    def add_dockable_window(label: str, gui_function: typing.Callable[[], None]) -> hello_imgui.DockableWindow:
         window = hello_imgui.DockableWindow()
         window.label = label
         window.dock_space_name = "MainDockSpace"
-        window.gui_function = demo_gui
+        window.gui_function = gui_function
         dockable_windows.append(window)
+        return window
 
     add_dockable_window("File List", main_gui)
     dockable_windows.append(state().mlvl_state.create_imgui_window())
     dockable_windows.append(state().area_state.create_imgui_window())
     dockable_windows.append(state().instance_state.create_imgui_window())
+    add_dockable_window("History", render_history).is_visible = False
 
     runner_params.docking_params.dockable_windows = dockable_windows
 
     runner_params.docking_params.docking_splits = [
-        hello_imgui.DockingSplit(
-            "MainDockSpace", "RightSpace", imgui.Dir_.right, 0.4
-        )
+        hello_imgui.DockingSplit("MainDockSpace", "RightSpace", imgui.Dir_.right, 0.4)
     ]
 
     immapp.run(runner_params=runner_params)
