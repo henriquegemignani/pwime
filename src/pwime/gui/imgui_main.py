@@ -32,9 +32,9 @@ def main_gui() -> None:
 
                 imgui.table_next_column()
                 if imgui.selectable(
-                    f"{i:08X}",
-                    False,
-                    imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
+                        f"{i:08X}",
+                        False,
+                        imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
                 )[1]:
                     state().mlvl_state.open_mlvl(i)
 
@@ -50,7 +50,7 @@ def render_history() -> None:
     project = state().project
     if project is not None:
         if imgui.begin_table(
-            "History", 2, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.reorderable
+                "History", 2, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.reorderable
         ):
             imgui.table_setup_column("When", imgui.TableColumnFlags_.width_fixed)
             imgui.table_setup_column("Action", imgui.TableColumnFlags_.width_fixed)
@@ -74,15 +74,23 @@ def render_history() -> None:
 
 
 def _show_menu() -> None:
-    if imgui.begin_menu("Project"):
-        if imgui.menu_item("Open ISO", "", False)[0]:
+    # if imgui.begin_menu("Project"):
+    #     if imgui.menu_item("Open ISO", "", False)[0]:
+    #         state().open_file_dialog = portable_file_dialogs.open_file("Select ISO", filters=["*.iso"])
+    #     imgui.end_menu()
+
+    if imgui.begin_menu("Preferences"):
+        if imgui.menu_item("Metroid Prime 2 ISO", "", False)[0]:
             state().open_file_dialog = portable_file_dialogs.open_file("Select ISO", filters=["*.iso"])
         imgui.end_menu()
 
     if state().open_file_dialog is not None and state().open_file_dialog.ready():
         files = state().open_file_dialog.result()
         if files:
-            state().load_iso(Path(files[0]), Game.ECHOES)
+            path = Path(files[0])
+            state().load_iso(path, Game.ECHOES)
+            state().preferences.prime2_iso = path
+            state().preferences.write_to_user_home()
         state().open_file_dialog = None
 
     imgui.text_disabled("Bai")
@@ -96,8 +104,10 @@ def _pre_new_frame() -> None:
 
 
 def run_gui(args: argparse.Namespace) -> None:
-    if args.iso:
-        state().load_iso(args.iso, args.game)
+    state().preferences.read_from_user_home()
+
+    if state().preferences.prime2_iso:
+        state().load_iso(state().preferences.prime2_iso, Game.ECHOES)
 
     runner_params = hello_imgui.RunnerParams()
     runner_params.callbacks.show_menus = _show_menu

@@ -28,6 +28,7 @@ dependencies = [
     # UI things
     "imgui-bundle",
     "humanize",
+    "appdirs",
 ]
 
 [project.readme]

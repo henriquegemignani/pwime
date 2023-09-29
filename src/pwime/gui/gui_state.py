@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from retro_data_structures.asset_manager import IsoFileProvider
 
 from pwime.asset_manager import OurAssetManager
+from pwime.preferences import Preferences
 from pwime.project import Project
 
 if TYPE_CHECKING:
@@ -33,6 +34,7 @@ class GuiState:
     mlvl_state: MlvlState
     area_state: AreaState
     instance_state: ScriptInstanceState
+    preferences: Preferences
     project: Project | None = None
     global_file_list: tuple[int, ...] = ()
     open_file_dialog: portable_file_dialogs.open_file = None
@@ -75,4 +77,4 @@ def state() -> GuiState:
     from pwime.gui.mlvl import MlvlState
     from pwime.gui.script_instance import ScriptInstanceState
 
-    return GuiState(MlvlState(), AreaState(), ScriptInstanceState())
+    return GuiState(MlvlState(), AreaState(), ScriptInstanceState(), Preferences())

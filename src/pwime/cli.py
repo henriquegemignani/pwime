@@ -18,7 +18,6 @@ def game_argument_type(s: str) -> Game:
 
 
 def add_gui_parser(parser: argparse.ArgumentParser):
-    parser.add_argument("--iso", type=Path, help="Automatically load the given ISO")
     parser.add_argument(
         "--game",
         type=game_argument_type,
