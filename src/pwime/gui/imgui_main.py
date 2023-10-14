@@ -8,7 +8,7 @@ import humanize
 from imgui_bundle import hello_imgui, imgui, immapp, portable_file_dialogs
 from retro_data_structures.game_check import Game
 
-from pwime.gui.gui_state import state
+from pwime.gui.gui_state import state, CurrentPopup
 
 if typing.TYPE_CHECKING:
     import argparse
@@ -73,25 +73,42 @@ def render_history() -> None:
         imgui.text("No project loaded..")
 
 
+class SelectPrime2IsoPopup(CurrentPopup):
+    def __init__(self):
+        self.file_dialog = portable_file_dialogs.open_file("Select ISO", filters=["*.iso"])
+
+    def render(self) -> bool:
+        if self.file_dialog.ready():
+            files = self.file_dialog.result()
+            if files:
+                path = Path(files[0])
+                state().load_iso(path, Game.ECHOES)
+                state().preferences.prime2_iso = path
+                state().preferences.write_to_user_home()
+            return False
+
+        return True
+
+
 def _show_menu() -> None:
-    # if imgui.begin_menu("Project"):
-    #     if imgui.menu_item("Open ISO", "", False)[0]:
-    #         state().open_file_dialog = portable_file_dialogs.open_file("Select ISO", filters=["*.iso"])
-    #     imgui.end_menu()
+    if imgui.begin_menu("Project"):
+        if imgui.menu_item("New", "", False)[0]:
+            pass
+        if imgui.menu_item("Open existing", "", False)[0]:
+            pass
+        if imgui.menu_item("Save", "", False)[0]:
+            pass
+
+        imgui.end_menu()
 
     if imgui.begin_menu("Preferences"):
         if imgui.menu_item("Metroid Prime 2 ISO", "", False)[0]:
-            state().open_file_dialog = portable_file_dialogs.open_file("Select ISO", filters=["*.iso"])
+            state().current_popup = SelectPrime2IsoPopup()
         imgui.end_menu()
 
-    if state().open_file_dialog is not None and state().open_file_dialog.ready():
-        files = state().open_file_dialog.result()
-        if files:
-            path = Path(files[0])
-            state().load_iso(path, Game.ECHOES)
-            state().preferences.prime2_iso = path
-            state().preferences.write_to_user_home()
-        state().open_file_dialog = None
+    if state().current_popup is not None:
+        if not state().current_popup.render():
+            state().current_popup = None
 
     imgui.text_disabled("Bai")
 

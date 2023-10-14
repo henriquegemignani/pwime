@@ -29,6 +29,12 @@ class FilteredAssetList(typing.NamedTuple):
     ids: list[int]
 
 
+class CurrentPopup:
+    def render(self) -> bool:
+        """Displays the popup. If return is false, it's removed."""
+        raise NotImplementedError()
+
+
 @dataclasses.dataclass()
 class GuiState:
     mlvl_state: MlvlState
@@ -37,6 +43,7 @@ class GuiState:
     preferences: Preferences
     project: Project | None = None
     global_file_list: tuple[int, ...] = ()
+    current_popup: CurrentPopup | None = None
     open_file_dialog: portable_file_dialogs.open_file = None
     selected_asset: int | None = None
     pending_windows: list[hello_imgui.DockableWindow] = dataclasses.field(default_factory=list)
