@@ -12,7 +12,8 @@ from retro_data_structures.properties.base_property import BaseProperty
 from retro_data_structures.properties.base_vector import BaseVector
 
 from pwime.gui.gui_state import FilteredAssetList, state
-from pwime.operations.script_instance import InstanceReference, PropReference, ScriptInstancePropertyEdit, get_instance
+from pwime.operations.script_instance import InstanceReference, PropReference, ScriptInstancePropertyEdit, get_instance, \
+    create_patch_for
 
 if typing.TYPE_CHECKING:
     from retro_data_structures.formats.mrea import Area
@@ -21,12 +22,16 @@ if typing.TYPE_CHECKING:
 T = typing.TypeVar("T")
 
 
-def submit_edit_for(reference: PropReference, new_value: object) -> None:
+def submit_edit_for(reference: PropReference, new_value: typing.Any) -> None:
+    instance = get_instance(state().asset_manager, reference.instance)
+
+    delta = create_patch_for(instance, reference.path, new_value)
+
     state().project.add_new_operation(
         ScriptInstancePropertyEdit(
-            reference,
-            get_instance(state().asset_manager, reference.instance).type,
-            new_value,
+            reference.instance,
+            instance.type,
+            delta,
         )
     )
 
@@ -128,12 +133,12 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
             asset_filter = imgui.input_text("Filter Assets", cached_asset_list.filter)[1]
 
             if imgui.begin_table(
-                "All Assets",
-                2,
-                imgui.TableFlags_.row_bg
-                | imgui.TableFlags_.borders_h
-                | imgui.TableFlags_.scroll_y
-                | imgui.TableFlags_.sortable,
+                    "All Assets",
+                    2,
+                    imgui.TableFlags_.row_bg
+                    | imgui.TableFlags_.borders_h
+                    | imgui.TableFlags_.scroll_y
+                    | imgui.TableFlags_.sortable,
             ):
                 imgui.table_setup_column("Asset Id", imgui.TableColumnFlags_.width_fixed)
                 imgui.table_setup_column("Name")
@@ -191,9 +196,9 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
 
                         imgui.table_next_column()
                         if imgui.selectable(
-                            f"{asset:08X}",
-                            False,
-                            imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
+                                f"{asset:08X}",
+                                False,
+                                imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
                         )[1]:
                             submit_edit_for(reference, asset)
                             imgui.close_current_popup()
@@ -421,7 +426,7 @@ class ScriptInstanceState(hello_imgui.DockableWindow):
         mlvl_id = state().mlvl_state.mlvl_id
 
         if imgui.begin_table(
-            "Properties", 3, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable
+                "Properties", 3, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable
         ):
             imgui.table_setup_column("Name")
             imgui.table_setup_column("Type")
