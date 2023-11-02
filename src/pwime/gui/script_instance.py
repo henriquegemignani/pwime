@@ -12,8 +12,13 @@ from retro_data_structures.properties.base_property import BaseProperty
 from retro_data_structures.properties.base_vector import BaseVector
 
 from pwime.gui.gui_state import FilteredAssetList, state
-from pwime.operations.script_instance import InstanceReference, PropReference, ScriptInstancePropertyEdit, get_instance, \
-    create_patch_for
+from pwime.operations.script_instance import (
+    InstanceReference,
+    PropReference,
+    ScriptInstancePropertyEdit,
+    create_patch_for,
+    get_instance,
+)
 
 if typing.TYPE_CHECKING:
     from retro_data_structures.formats.mrea import Area

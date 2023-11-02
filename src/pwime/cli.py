@@ -1,6 +1,5 @@
 import argparse
 import typing
-from pathlib import Path
 
 from retro_data_structures.game_check import Game
 

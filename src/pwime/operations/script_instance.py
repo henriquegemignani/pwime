@@ -3,17 +3,20 @@ from __future__ import annotations
 import dataclasses
 import typing
 
-from retro_data_structures.formats import Mlvl
+from retro_data_structures.formats.mlvl import Mlvl
+from retro_data_structures.formats.script_object import InstanceId
 from retro_data_structures.properties import field_reflection
 from retro_data_structures.properties.base_property import BaseObjectType, BaseProperty
+from retro_data_structures.properties.echoes import objects
 
-from pwime.asset_manager import OurAssetManager
 from pwime.operations.base import Operation
-from pwime.project import Project
-from pwime.util.json_lib import JsonObject
 
 if typing.TYPE_CHECKING:
-    from retro_data_structures.formats.script_object import InstanceId, ScriptInstance
+    from retro_data_structures.formats.script_object import ScriptInstance
+
+    from pwime.asset_manager import OurAssetManager
+    from pwime.project import Project
+    from pwime.util.json_lib import JsonObject
 
 
 @dataclasses.dataclass(frozen=True)
@@ -146,7 +149,16 @@ class ScriptInstancePropertyEdit(Operation, typing.Generic[PropType]):
 
     def to_json(self) -> JsonObject:
         return {
+            "kind": "script_instance_property_edit",
             "reference": self.reference.to_json(),
             "prop_type": self.prop_type.object_type(),
             "delta": self.delta,
         }
+
+    @classmethod
+    def from_json(cls, data: JsonObject) -> typing.Self:
+        return cls(
+            reference=InstanceReference.from_json(data["reference"]),
+            prop_type=objects.get_object(data["prop_type"]),
+            delta=data["delta"],
+        )

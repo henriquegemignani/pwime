@@ -6,8 +6,10 @@ import typing
 from typing import TYPE_CHECKING
 
 from retro_data_structures.asset_manager import IsoFileProvider
+from retro_data_structures.game_check import Game
 
 from pwime.asset_manager import OurAssetManager
+from pwime.gui.popup import CurrentPopup
 from pwime.preferences import Preferences
 from pwime.project import Project
 
@@ -15,8 +17,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from imgui_bundle import portable_file_dialogs
-    from imgui_bundle._imgui_bundle import hello_imgui
-    from retro_data_structures.game_check import Game
 
     from pwime.gui.area import AreaState
     from pwime.gui.mlvl import MlvlState
@@ -29,12 +29,6 @@ class FilteredAssetList(typing.NamedTuple):
     ids: list[int]
 
 
-class CurrentPopup:
-    def render(self) -> bool:
-        """Displays the popup. If return is false, it's removed."""
-        raise NotImplementedError()
-
-
 @dataclasses.dataclass()
 class GuiState:
     mlvl_state: MlvlState
@@ -42,11 +36,12 @@ class GuiState:
     instance_state: ScriptInstanceState
     preferences: Preferences
     project: Project | None = None
+    current_project_path: Path | None = None
     global_file_list: tuple[int, ...] = ()
     current_popup: CurrentPopup | None = None
     open_file_dialog: portable_file_dialogs.open_file = None
     selected_asset: int | None = None
-    pending_windows: list[hello_imgui.DockableWindow] = dataclasses.field(default_factory=list)
+    pending_pre_frame_tasks: list[typing.Callable[[], None]] = dataclasses.field(default_factory=list)
 
     @property
     def asset_manager(self) -> OurAssetManager | None:
@@ -54,9 +49,10 @@ class GuiState:
             return None
         return self.project.asset_manager
 
-    def load_iso(self, path: Path, game: Game):
-        manager = OurAssetManager(IsoFileProvider(path), game)
-        self.project = Project(manager)
+    def open_project(self, path: Path) -> None:
+        manager = OurAssetManager(IsoFileProvider(self.preferences.prime2_iso), Game.ECHOES)
+        self.project = Project.load_from_file(manager, path)
+        self.current_project_path = path
 
         global_file_types = {
             "MLVL",

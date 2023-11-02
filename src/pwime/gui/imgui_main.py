@@ -8,7 +8,10 @@ import humanize
 from imgui_bundle import hello_imgui, imgui, immapp, portable_file_dialogs
 from retro_data_structures.game_check import Game
 
-from pwime.gui.gui_state import state, CurrentPopup
+from pwime.gui.gui_state import state
+from pwime.gui.popup import CurrentPopup
+from pwime.gui.project_popup import NewProjectPopup
+from pwime.util import imgui_helper
 
 if typing.TYPE_CHECKING:
     import argparse
@@ -70,7 +73,7 @@ def render_history() -> None:
 
             imgui.end_table()
     else:
-        imgui.text("No project loaded..")
+        imgui.text("No project loaded.")
 
 
 class SelectPrime2IsoPopup(CurrentPopup):
@@ -93,11 +96,18 @@ class SelectPrime2IsoPopup(CurrentPopup):
 def _show_menu() -> None:
     if imgui.begin_menu("Project"):
         if imgui.menu_item("New", "", False)[0]:
-            pass
+            state().current_popup = NewProjectPopup()
+
         if imgui.menu_item("Open existing", "", False)[0]:
             pass
-        if imgui.menu_item("Save", "", False)[0]:
-            pass
+
+        with imgui_helper.disabled(state().project is None):
+            if imgui.menu_item("Save", "", False)[0]:
+                state().project.save_to_file(state().current_project_path)
+
+            if imgui.menu_item("Close", "", False)[0]:
+                # TODO: confirm discarding changes
+                state().project = None
 
         imgui.end_menu()
 
@@ -114,17 +124,33 @@ def _show_menu() -> None:
 
 
 def _pre_new_frame() -> None:
-    if state().pending_windows:
-        params = hello_imgui.get_runner_params().docking_params
-        params.dockable_windows = params.dockable_windows + state().pending_windows
-        state().pending_windows = []
+    pending_tasks = list(state().pending_pre_frame_tasks)
+    state().pending_pre_frame_tasks.clear()
+
+    for task in pending_tasks:
+        task()
+
+
+def focus_on_file_list() -> None:
+    tries = 2
+
+    def task():
+        nonlocal tries
+        window = hello_imgui.get_runner_params().docking_params.dockable_window_of_name("File List")
+        window.focus_window_at_next_frame = True
+
+        tries -= 1
+        if tries > 0:
+            state().pending_pre_frame_tasks.append(task)
+
+    state().pending_pre_frame_tasks.append(task)
 
 
 def run_gui(args: argparse.Namespace) -> None:
     state().preferences.read_from_user_home()
 
-    if state().preferences.prime2_iso:
-        state().load_iso(state().preferences.prime2_iso, Game.ECHOES)
+    if state().preferences.last_project_path:
+        state().open_project(state().preferences.last_project_path)
 
     runner_params = hello_imgui.RunnerParams()
     runner_params.callbacks.show_menus = _show_menu
@@ -152,6 +178,7 @@ def run_gui(args: argparse.Namespace) -> None:
         window.label = label
         window.dock_space_name = "MainDockSpace"
         window.gui_function = gui_function
+        window.imgui_window_flags = imgui.WindowFlags_.no_bring_to_front_on_focus
         dockable_windows.append(window)
         return window
 
@@ -166,5 +193,7 @@ def run_gui(args: argparse.Namespace) -> None:
     runner_params.docking_params.docking_splits = [
         hello_imgui.DockingSplit("MainDockSpace", "RightSpace", imgui.Dir_.right, 0.4)
     ]
+
+    focus_on_file_list()
 
     immapp.run(runner_params=runner_params)
