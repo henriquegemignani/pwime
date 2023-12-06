@@ -6,11 +6,13 @@ from pathlib import Path
 
 from retro_data_structures.asset_manager import AssetManager, FileProvider
 from retro_data_structures.base_resource import AssetId, BaseResource, NameOrAssetId
+from retro_data_structures.game_check import Game
 
-if typing.TYPE_CHECKING:
-    from retro_data_structures.game_check import Game
 
 T = typing.TypeVar("T", bound=BaseResource)
+
+
+Providers: typing.TypeAlias = dict[Game, FileProvider]
 
 
 class OurAssetManager(AssetManager):

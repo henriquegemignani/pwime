@@ -5,7 +5,7 @@ import functools
 import typing
 from typing import TYPE_CHECKING
 
-from retro_data_structures.asset_manager import IsoFileProvider
+from retro_data_structures.asset_manager import IsoFileProvider, FileProvider
 from retro_data_structures.game_check import Game
 
 from pwime.asset_manager import OurAssetManager
@@ -35,6 +35,7 @@ class GuiState:
     area_state: AreaState
     instance_state: ScriptInstanceState
     preferences: Preferences
+    file_providers: dict[Game, FileProvider] = dataclasses.field(default_factory=dict)
     project: Project | None = None
     current_project_path: Path | None = None
     global_file_list: tuple[int, ...] = ()
@@ -50,13 +51,14 @@ class GuiState:
         return self.project.asset_manager
 
     def open_project(self, path: Path) -> None:
-        manager = OurAssetManager(IsoFileProvider(self.preferences.prime2_iso), Game.ECHOES)
-        self.project = Project.load_from_file(manager, path)
+        self.project = Project.load_from_file(path, self.file_providers)
         self.current_project_path = path
 
         global_file_types = {
             "MLVL",
         }
+
+        manager = self.project.asset_manager
         self.global_file_list = tuple(
             i for i in manager.all_asset_ids() if manager.get_asset_type(i) in global_file_types
         )
@@ -69,9 +71,19 @@ class GuiState:
                 asset
                 for asset in self.asset_manager.all_asset_ids()
                 if self.asset_manager.get_asset_type(asset) in asset_types
-                and (not name_filter or name_filter in self.asset_manager.asset_names.get(asset, "<unknown>"))
+                   and (not name_filter or name_filter in self.asset_manager.asset_names.get(asset, "<unknown>"))
             ],
         )
+
+    def load_iso(self, game: Game, iso: Path) -> None:
+        self.file_providers[game] = IsoFileProvider(iso)
+
+    def restore_from_preferences(self):
+        for game, path in self.preferences.game_iso_paths.items():
+            self.load_iso(game, path)
+
+        if self.preferences.last_project_path:
+            self.open_project(self.preferences.last_project_path)
 
 
 @functools.cache

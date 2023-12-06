@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 from appdirs import AppDirs
+from retro_data_structures.game_check import Game
 
 from pwime.util.json_lib import JsonObject
 
@@ -10,7 +11,7 @@ roaming_dirs = AppDirs("pwime", False, roaming=True)
 
 
 def decode_optional_path(data: JsonObject, key: str) -> Path | None:
-    if key in data:
+    if data.get(key) is not None:
         assert isinstance(data[key], str)
         return Path(data[key])
     return None
@@ -24,8 +25,8 @@ def encode_optional_path(path: Path | None) -> str | None:
 
 @dataclasses.dataclass()
 class Preferences:
-    prime2_iso: Path | None = None
     last_project_path: Path | None = None
+    game_iso_paths: dict[Game, Path] = dataclasses.field(default_factory=dict)
 
     def read_from_user_home(self) -> None:
         config_path = Path(roaming_dirs.user_config_dir)
@@ -39,13 +40,17 @@ class Preferences:
             pass
 
     def read_from_json(self, data: JsonObject) -> None:
-        self.prime2_iso = decode_optional_path(data, "prime2_iso")
         self.last_project_path = decode_optional_path(data, "last_project_path")
+        for game, path in data.get("game_iso_paths", {}).items():
+            self.game_iso_paths[getattr(Game, game)] = Path(path)
 
     def to_json(self) -> JsonObject:
         return {
-            "prime2_iso": encode_optional_path(self.prime2_iso),
             "last_project_path": encode_optional_path(self.last_project_path),
+            "game_iso_paths": {
+                game.name: str(path)
+                for game, path in self.game_iso_paths.items()
+            }
         }
 
     def write_to_user_home(self) -> None:

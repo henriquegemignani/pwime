@@ -3,8 +3,10 @@ import json
 import typing
 from pathlib import Path
 
+from retro_data_structures.game_check import Game
+
 import pwime.version
-from pwime.asset_manager import OurAssetManager
+from pwime.asset_manager import OurAssetManager, Providers
 from pwime.operations import serializer
 from pwime.operations.base import Operation
 
@@ -15,10 +17,12 @@ class PerformedOperation(typing.NamedTuple):
 
 
 class Project:
+    name: str
     asset_manager: OurAssetManager
     performed_operations: list[PerformedOperation]
 
-    def __init__(self, manager: OurAssetManager):
+    def __init__(self, name: str, manager: OurAssetManager):
+        self.name = name
         self.asset_manager = manager
         self.performed_operations = []
         self._threshold_to_overwrite = datetime.timedelta(minutes=1)
@@ -44,6 +48,8 @@ class Project:
             "pwime_version": {
                 "name": pwime.version.__version__,
             },
+            "project_name": self.name,
+            "game": self.asset_manager.target_game.value,
             "operations": [
                 {
                     "time": operation.moment.astimezone(datetime.UTC).isoformat(),
@@ -52,19 +58,24 @@ class Project:
                 for operation in self.performed_operations
             ]
         }
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(data, indent=4))
 
     @classmethod
-    def load_from_file(cls, manager: OurAssetManager, path: Path) -> typing.Self:
+    def load_from_file(cls, path: Path, providers: Providers) -> typing.Self:
         with path.open() as file:
             data = json.load(file)
 
-        result = cls(manager)
+        game = Game(data["game"])
+        manager = OurAssetManager(providers[game], game)
+
+        result = cls(data["project_name"], manager)
         for op in data["operations"]:
             result.performed_operations.append(PerformedOperation(
                 serializer.decode_from_json(op["data"]),
                 datetime.datetime.fromisoformat(op["time"])
             ))
+            result.performed_operations[-1].operation.perform(result)
 
         return result
 

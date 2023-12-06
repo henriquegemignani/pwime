@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import datetime
+import os
 import typing
 from pathlib import Path
 
 import humanize
 from imgui_bundle import hello_imgui, imgui, immapp, portable_file_dialogs
+from retro_data_structures.asset_manager import IsoFileProvider
 from retro_data_structures.game_check import Game
 
 from pwime.gui.gui_state import state
@@ -46,7 +48,7 @@ def main_gui() -> None:
 
             imgui.end_table()
     else:
-        imgui.text("No ISO loaded. Open one in the Projects menu above.")
+        imgui.text("No project loaded. Open one in the Projects menu above.")
 
 
 def render_history() -> None:
@@ -78,14 +80,19 @@ def render_history() -> None:
 
 class SelectPrime2IsoPopup(CurrentPopup):
     def __init__(self):
-        self.file_dialog = portable_file_dialogs.open_file("Select ISO", filters=["*.iso"])
+        default_path = state().preferences.prime2_iso
+        self.file_dialog = portable_file_dialogs.open_file(
+            "Select ISO",
+            default_path=os.fspath(default_path) if default_path else "",
+            filters=["*.iso"]
+        )
 
     def render(self) -> bool:
         if self.file_dialog.ready():
             files = self.file_dialog.result()
             if files:
                 path = Path(files[0])
-                state().load_iso(path, Game.ECHOES)
+                state().load_iso(Game.ECHOES, path)
                 state().preferences.prime2_iso = path
                 state().preferences.write_to_user_home()
             return False
@@ -96,7 +103,7 @@ class SelectPrime2IsoPopup(CurrentPopup):
 def _show_menu() -> None:
     if imgui.begin_menu("Project"):
         if imgui.menu_item("New", "", False)[0]:
-            state().current_popup = NewProjectPopup()
+            state().current_popup = NewProjectPopup(state().preferences)
 
         if imgui.menu_item("Open existing", "", False)[0]:
             pass
@@ -148,9 +155,7 @@ def focus_on_file_list() -> None:
 
 def run_gui(args: argparse.Namespace) -> None:
     state().preferences.read_from_user_home()
-
-    if state().preferences.last_project_path:
-        state().open_project(state().preferences.last_project_path)
+    state().restore_from_preferences()
 
     runner_params = hello_imgui.RunnerParams()
     runner_params.callbacks.show_menus = _show_menu
