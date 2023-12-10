@@ -6,13 +6,12 @@ import typing
 from pathlib import Path
 
 import humanize
-from imgui_bundle import hello_imgui, imgui, immapp, portable_file_dialogs
-from retro_data_structures.asset_manager import IsoFileProvider
-from retro_data_structures.game_check import Game
+from imgui_bundle import hello_imgui, imgui, immapp
 
 from pwime.gui.gui_state import state
-from pwime.gui.popup import CurrentPopup
-from pwime.gui.project_popup import NewProjectPopup
+from pwime.gui.gui_tools import FilePrompt
+from pwime.gui.popup import CurrentImguiPopup
+from pwime.gui.project_popup import NewProjectPopup, validate_project_file
 from pwime.util import imgui_helper
 
 if typing.TYPE_CHECKING:
@@ -78,26 +77,50 @@ def render_history() -> None:
         imgui.text("No project loaded.")
 
 
-class SelectPrime2IsoPopup(CurrentPopup):
+class OpenProjectPopup(CurrentImguiPopup):
+    project_path: str = ""
+
     def __init__(self):
-        default_path = state().preferences.prime2_iso
-        self.file_dialog = portable_file_dialogs.open_file(
-            "Select ISO",
-            default_path=os.fspath(default_path) if default_path else "",
-            filters=["*.iso"]
+        initial_value = ""
+
+        if state().preferences.last_project_path is not None:
+            initial_value = os.fspath(state().preferences.last_project_path)
+
+        self.project_prompt = FilePrompt(
+            "Project File",
+            "Path to the PWIME Project file",
+            "Select File",
+            ["*.pwimep"],
+            initial_value,
+            validate_project_file,
         )
 
-    def render(self) -> bool:
-        if self.file_dialog.ready():
-            files = self.file_dialog.result()
-            if files:
-                path = Path(files[0])
-                state().load_iso(Game.ECHOES, path)
-                state().preferences.prime2_iso = path
-                state().preferences.write_to_user_home()
-            return False
+    def _popup_name(self) -> str:
+        return "Open Project"
 
-        return True
+    def render_modal(self) -> bool:
+        self.project_prompt.render()
+
+        result = True
+
+        # Buttons at the end
+        valid = self.project_prompt.validate()
+        with imgui_helper.disabled(not valid):
+            if imgui.button("Open project"):
+                self.open_project()
+                result = False
+
+        imgui.same_line()
+        if imgui.button("Cancel"):
+            result = False
+
+        return result
+
+    def open_project(self) -> None:
+        preferences = state().preferences
+        preferences.last_project_path = Path(self.project_prompt.value)
+        state().open_project(preferences.last_project_path)
+        preferences.write_to_user_home()
 
 
 def _show_menu() -> None:
@@ -106,7 +129,7 @@ def _show_menu() -> None:
             state().current_popup = NewProjectPopup(state().preferences)
 
         if imgui.menu_item("Open existing", "", False)[0]:
-            pass
+            state().current_popup = OpenProjectPopup()
 
         with imgui_helper.disabled(state().project is None):
             if imgui.menu_item("Save", "", False)[0]:
@@ -117,17 +140,22 @@ def _show_menu() -> None:
                 state().project = None
 
         imgui.end_menu()
-
-    if imgui.begin_menu("Preferences"):
-        if imgui.menu_item("Metroid Prime 2 ISO", "", False)[0]:
-            state().current_popup = SelectPrime2IsoPopup()
-        imgui.end_menu()
+    #
+    # if imgui.begin_menu("Preferences"):
+    #     if imgui.menu_item("Metroid Prime 2 ISO", "", False)[0]:
+    #         state().current_popup = SelectPrime2IsoPopup()
+    #     imgui.end_menu()
 
     if state().current_popup is not None:
         if not state().current_popup.render():
             state().current_popup = None
 
     imgui.text_disabled("Bai")
+
+
+def _any_backend_event_callback(event) -> bool:
+    print("EVENT!", event)
+    return False
 
 
 def _pre_new_frame() -> None:
@@ -160,6 +188,7 @@ def run_gui(args: argparse.Namespace) -> None:
     runner_params = hello_imgui.RunnerParams()
     runner_params.callbacks.show_menus = _show_menu
     runner_params.callbacks.pre_new_frame = _pre_new_frame
+    runner_params.callbacks.any_backend_event_callback = _any_backend_event_callback
     runner_params.app_window_params.window_title = "Prime World Interactive Media Editor"
     runner_params.imgui_window_params.show_menu_app = False
     runner_params.imgui_window_params.show_menu_bar = True
