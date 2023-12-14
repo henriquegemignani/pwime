@@ -1,7 +1,10 @@
 import datetime
 import json
+import os
+import tempfile
 import typing
 from pathlib import Path
+import nod
 
 from retro_data_structures.game_check import Game
 
@@ -79,3 +82,18 @@ class Project:
 
         return result
 
+    def export_to(self, path: Path) -> None:
+        context = nod.ExtractionContext()
+
+        self.asset_manager.flush_modified_assets()
+
+        def progress_callback(progress: float, name: str, bytes: int) -> None:
+            pass
+
+        with tempfile.TemporaryDirectory() as d:
+            tmp_path = Path(d)
+            self.asset_manager.provider.data.extract_to_directory(d, context)
+            self.asset_manager.save_modifications(tmp_path.joinpath("files"))
+
+            disc_builder = nod.DiscBuilderGCN(os.fspath(path), progress_callback)
+            disc_builder.build_from_directory(d)

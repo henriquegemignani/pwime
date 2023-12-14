@@ -35,7 +35,7 @@ class GuiState:
     area_state: AreaState
     instance_state: ScriptInstanceState
     preferences: Preferences
-    file_providers: dict[Game, FileProvider] = dataclasses.field(default_factory=dict)
+    file_providers: dict[Game, IsoFileProvider] = dataclasses.field(default_factory=dict)
     project: Project | None = None
     current_project_path: Path | None = None
     global_file_list: tuple[int, ...] = ()

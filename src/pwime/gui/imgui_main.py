@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import logging
 import os
 import typing
 from pathlib import Path
@@ -139,6 +140,7 @@ class ExportProjectPopup(ConfirmCancelActionPopup):
     def _perform_action(self) -> None:
         preferences = state().preferences
         preferences.last_export_path = Path(self.iso_prompt.value)
+        state().project.export_to(preferences.last_export_path)
         preferences.write_to_user_home()
 
 
@@ -205,6 +207,8 @@ def focus_on_file_list() -> None:
 
 
 def run_gui(args: argparse.Namespace) -> None:
+    logging.basicConfig(level=logging.DEBUG)
+
     state().preferences.read_from_user_home()
     state().restore_from_preferences()
 
