@@ -29,6 +29,9 @@ dependencies = [
     "imgui-bundle",
     "humanize",
     "appdirs",
+
+    # CLI UI
+    "tqdm",
 ]
 
 [project.readme]
