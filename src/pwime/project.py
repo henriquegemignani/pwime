@@ -33,7 +33,7 @@ class Project:
     def add_new_operation(self, operation: Operation) -> None:
         """Performs the operation and records it, ensuring we can undo it later and is persisted."""
 
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(datetime.UTC)
         if self.performed_operations:
             last_op = self.performed_operations[-1]
             if now - last_op.moment < self._threshold_to_overwrite and operation.overwrites_operation(
