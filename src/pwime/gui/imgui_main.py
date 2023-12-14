@@ -9,8 +9,8 @@ import humanize
 from imgui_bundle import hello_imgui, imgui, immapp
 
 from pwime.gui.gui_state import state
-from pwime.gui.gui_tools import FilePrompt
-from pwime.gui.popup import CurrentImguiPopup
+from pwime.gui.gui_tools import FilePrompt, IsoPrompt
+from pwime.gui.popup import CurrentImguiPopup, ConfirmCancelActionPopup
 from pwime.gui.project_popup import NewProjectPopup, validate_project_file
 from pwime.util import imgui_helper
 
@@ -38,7 +38,7 @@ def main_gui() -> None:
                 if imgui.selectable(
                         f"{i:08X}",
                         False,
-                        imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
+                        imgui.SelectableFlags_.span_all_columns,
                 )[1]:
                     state().mlvl_state.open_mlvl(i)
 
@@ -77,12 +77,12 @@ def render_history() -> None:
         imgui.text("No project loaded.")
 
 
-class OpenProjectPopup(CurrentImguiPopup):
-    project_path: str = ""
 
+class OpenProjectPopup(ConfirmCancelActionPopup):
     def __init__(self):
-        initial_value = ""
+        self._confirm_action_text = "Open project"
 
+        initial_value = ""
         if state().preferences.last_project_path is not None:
             initial_value = os.fspath(state().preferences.last_project_path)
 
@@ -93,6 +93,7 @@ class OpenProjectPopup(CurrentImguiPopup):
             ["*.pwimep"],
             initial_value,
             validate_project_file,
+            save_file=False,
         )
 
     def _popup_name(self) -> str:
@@ -100,27 +101,46 @@ class OpenProjectPopup(CurrentImguiPopup):
 
     def render_modal(self) -> bool:
         self.project_prompt.render()
+        return super().render_modal()
 
-        result = True
+    def _valdiate(self) -> bool:
+        return self.project_prompt.validate()
 
-        # Buttons at the end
-        valid = self.project_prompt.validate()
-        with imgui_helper.disabled(not valid):
-            if imgui.button("Open project"):
-                self.open_project()
-                result = False
-
-        imgui.same_line()
-        if imgui.button("Cancel"):
-            result = False
-
-        return result
-
-    def open_project(self) -> None:
+    def _perform_action(self) -> None:
         preferences = state().preferences
         preferences.last_project_path = Path(self.project_prompt.value)
         state().open_project(preferences.last_project_path)
         preferences.write_to_user_home()
+
+
+class ExportProjectPopup(ConfirmCancelActionPopup):
+    def __init__(self):
+        self._confirm_action_text = "Export project"
+
+        initial_value = ""
+        if state().preferences.last_export_path is not None:
+            initial_value = os.fspath(state().preferences.last_export_path)
+
+        self.iso_prompt = IsoPrompt(
+            initial_value,
+            save_file=True,
+        )
+
+    def _popup_name(self) -> str:
+        return "Export Project"
+
+    def render_modal(self) -> bool:
+        self.iso_prompt.render()
+        return super().render_modal()
+
+    def _valdiate(self) -> bool:
+        return self.iso_prompt.validate()
+
+    def _perform_action(self) -> None:
+        preferences = state().preferences
+        preferences.last_export_path = Path(self.iso_prompt.value)
+        preferences.write_to_user_home()
+
 
 
 def _show_menu() -> None:
@@ -134,6 +154,9 @@ def _show_menu() -> None:
         with imgui_helper.disabled(state().project is None):
             if imgui.menu_item("Save", "", False)[0]:
                 state().project.save_to_file(state().current_project_path)
+
+            if imgui.menu_item("Export", "", False)[0]:
+                state().current_popup = ExportProjectPopup()
 
             if imgui.menu_item("Close", "", False)[0]:
                 # TODO: confirm discarding changes

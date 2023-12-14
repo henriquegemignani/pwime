@@ -73,7 +73,7 @@ class AreaState(hello_imgui.DockableWindow):
                     if imgui.selectable(
                         f"{instance_name}##{instance.id}",
                         False,
-                        imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
+                        imgui.SelectableFlags_.span_all_columns,
                     )[1]:
                         state().instance_state.open_instance(self.area, instance)
 

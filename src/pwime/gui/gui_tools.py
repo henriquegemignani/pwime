@@ -10,8 +10,7 @@ from pwime.util import imgui_helper
 class PathPrompt:
     _prompt_dialog: portable_file_dialogs.select_folder | portable_file_dialogs.open_file | None = None
 
-    def __init__(self, title: str, prompt_text: str,
-                 initial_value: str, validator: typing.Callable[[str], bool]):
+    def __init__(self, title: str, prompt_text: str, initial_value: str, validator: typing.Callable[[str], bool]):
         self._title = title
         self._prompt_text = prompt_text
         self.value = initial_value
@@ -21,10 +20,7 @@ class PathPrompt:
         return self._validator(self.value)
 
     def render(self):
-        modified, new_value = imgui_helper.validated_input_text(
-            self._title, self.value,
-            self._validator(self.value)
-        )
+        modified, new_value = imgui_helper.validated_input_text(self._title, self.value, self._validator(self.value))
         if modified:
             self.value = new_value
 
@@ -45,16 +41,27 @@ class PathPrompt:
         raise NotImplementedError()
 
 
-def _valid_iso_path(path: str) -> bool:
+def _valid_existing_iso_path(path: str) -> bool:
     p = Path(path)
     return p.suffix == ".iso" and p.is_file()
 
 
+def _valid_new_iso_path(path: str) -> bool:
+    p = Path(path)
+    return p.suffix == ".iso" and p.parent.is_dir()
+
+
 class FilePrompt(PathPrompt):
-    def __init__(self, title: str, prompt_text: str,
-                 select_text: str, filters: list[str],
-                 initial_value: str,
-                 validator: typing.Callable[[str], bool]):
+    def __init__(
+        self,
+        title: str,
+        prompt_text: str,
+        select_text: str,
+        filters: list[str],
+        initial_value: str,
+        validator: typing.Callable[[str], bool],
+        save_file: bool,
+    ):
         super().__init__(
             title,
             prompt_text,
@@ -63,10 +70,14 @@ class FilePrompt(PathPrompt):
         )
         self._select_text = select_text
         self._filters = filters
+        if save_file:
+            self._dialog_class = portable_file_dialogs.save_file
+        else:
+            self._dialog_class = portable_file_dialogs.open_file
 
     def _render_select_path_button(self):
         if imgui.button(self._select_text):
-            self.iso_dialog = portable_file_dialogs.open_file(
+            self._prompt_dialog = self._dialog_class(
                 self._prompt_text,
                 self.value,
                 filters=self._filters,
@@ -74,21 +85,19 @@ class FilePrompt(PathPrompt):
 
 
 class IsoPrompt(FilePrompt):
-    def __init__(self, initial_value: str):
+    def __init__(self, initial_value: str, save_file: bool):
         super().__init__(
             "Game ISO",
             "Path to a game ISO",
             "Select ISO",
             ["*.iso"],
             initial_value,
-            _valid_iso_path,
+            _valid_new_iso_path if save_file else _valid_existing_iso_path,
+            save_file,
         )
 
 
 class FolderPrompt(PathPrompt):
     def _render_select_path_button(self):
         if imgui.button("Select Folder"):
-            self._prompt_dialog = portable_file_dialogs.select_folder(
-                self._prompt_text,
-                self.value
-            )
+            self._prompt_dialog = portable_file_dialogs.select_folder(self._prompt_text, self.value)

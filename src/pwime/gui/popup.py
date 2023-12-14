@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from imgui_bundle import imgui
 
+from pwime.util import imgui_helper
+
 
 class CurrentPopup:
     def render(self) -> bool:
@@ -35,5 +37,29 @@ class CurrentImguiPopup(CurrentPopup):
             result = self.render_modal()
 
             imgui.end_popup()
+
+        return result
+
+
+class ConfirmCancelActionPopup(CurrentImguiPopup):
+    _confirm_action_text: str = "Confirm"
+
+    def _valdiate() -> bool:
+        raise NotImplementedError
+
+    def _perform_action() -> None:
+        raise NotImplementedError
+
+    def render_modal(self) -> bool:
+        result = True
+
+        with imgui_helper.disabled(not self._valdiate()):
+            if imgui.button(self._confirm_action_text):
+                self._perform_action()
+                result = False
+
+        imgui.same_line()
+        if imgui.button("Cancel"):
+            result = False
 
         return result

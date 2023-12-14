@@ -26,6 +26,7 @@ def encode_optional_path(path: Path | None) -> str | None:
 @dataclasses.dataclass()
 class Preferences:
     last_project_path: Path | None = None
+    last_export_path: Path | None = None
     game_iso_paths: dict[Game, Path] = dataclasses.field(default_factory=dict)
 
     def read_from_user_home(self) -> None:
@@ -41,12 +42,14 @@ class Preferences:
 
     def read_from_json(self, data: JsonObject) -> None:
         self.last_project_path = decode_optional_path(data, "last_project_path")
+        self.last_export_path = decode_optional_path(data, "last_export_path")
         for game, path in data.get("game_iso_paths", {}).items():
             self.game_iso_paths[getattr(Game, game)] = Path(path)
 
     def to_json(self) -> JsonObject:
         return {
             "last_project_path": encode_optional_path(self.last_project_path),
+            "last_export_path": encode_optional_path(self.last_export_path),
             "game_iso_paths": {
                 game.name: str(path)
                 for game, path in self.game_iso_paths.items()

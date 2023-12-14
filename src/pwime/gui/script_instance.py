@@ -203,7 +203,7 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
                         if imgui.selectable(
                                 f"{asset:08X}",
                                 False,
-                                imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
+                                imgui.SelectableFlags_.span_all_columns,
                         )[1]:
                             submit_edit_for(reference, asset)
                             imgui.close_current_popup()

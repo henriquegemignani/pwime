@@ -60,7 +60,7 @@ class MlvlState:
                 if imgui.selectable(
                     f"{area.mrea_asset_id:08X}",
                     False,
-                    imgui.SelectableFlags_.span_all_columns | imgui.SelectableFlags_.allow_item_overlap,
+                    imgui.SelectableFlags_.span_all_columns,
                 )[1]:
                     state().area_state.open_area(area)
 
