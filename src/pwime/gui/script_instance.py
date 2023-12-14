@@ -6,12 +6,14 @@ import functools
 import typing
 
 from imgui_bundle import hello_imgui, imgui
+from retro_data_structures.formats.script_object import Connection
 from retro_data_structures.base_resource import AssetId
 from retro_data_structures.properties.base_color import BaseColor
 from retro_data_structures.properties.base_property import BaseProperty
 from retro_data_structures.properties.base_vector import BaseVector
 
 from pwime.gui.gui_state import FilteredAssetList, state
+from pwime.util import imgui_helper
 from pwime.operations.script_instance import (
     InstanceReference,
     PropReference,
@@ -233,10 +235,9 @@ class IntEnumRenderer(PropertyRenderer[enum.IntEnum]):
         return None
 
     def render(self, reference: PropReference) -> None:
-        all_values = [_enum_name(it) for it in self.item.__class__]
-        changed, selected = imgui.combo(f"##{self.field.name}", self.item.value, all_values)
+        changed, new_value = imgui_helper.enum_combo(self.item, f"##{self.field.name}")
         if changed:
-            submit_edit_for(reference, all_values[selected])
+            submit_edit_for(reference, new_value)
 
 
 class IntFlagRenderer(PropertyRenderer[enum.IntFlag]):
@@ -449,12 +450,23 @@ class ScriptInstanceState(hello_imgui.DockableWindow):
             imgui.table_setup_column("Target Name")
             imgui.table_headers_row()
 
-            for connection in instance.connections:
+            connections = list(instance.connections)
+            def edit_connection(index: int, conn: Connection) -> None:
+                # TODO: make operation
+                connections[index] = conn
+                instance.connections = connections
+
+            for i, connection in enumerate(connections):
                 imgui.table_next_row()
                 imgui.table_next_column()
-                imgui.text(connection.state.name)
+                changed, new_state = imgui_helper.enum_combo(connection.state, f"##{i}_state")
+                if changed:
+                    edit_connection(i, dataclasses.replace(connection, state=new_state))
                 imgui.table_next_column()
-                imgui.text(connection.message.name)
+
+                changed, new_message = imgui_helper.enum_combo(connection.message, f"##{i}_message")
+                if changed:
+                    edit_connection(i, dataclasses.replace(connection, message=new_message))
                 imgui.table_next_column()
                 imgui.text(f"{connection.target}")
                 imgui.table_next_column()
