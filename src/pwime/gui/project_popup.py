@@ -34,7 +34,7 @@ class NewProjectPopup(CurrentImguiPopup):
         if self.game in preferences.game_iso_paths:
             iso_path = os.fspath(preferences.game_iso_paths[self.game])
 
-        self._iso_prompt = IsoPrompt(iso_path)
+        self._iso_prompt = IsoPrompt(iso_path, False)
         self._location_prompt = FolderPrompt(
             "Project Location",
             "Where to create project",

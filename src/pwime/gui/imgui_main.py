@@ -8,6 +8,7 @@ from pathlib import Path
 
 import humanize
 from imgui_bundle import hello_imgui, imgui, immapp
+from retro_data_structures.game_check import Game
 
 from pwime.gui.gui_state import state
 from pwime.gui.gui_tools import FilePrompt, IsoPrompt
@@ -83,16 +84,25 @@ class OpenProjectPopup(ConfirmCancelActionPopup):
     def __init__(self):
         self._confirm_action_text = "Open project"
 
-        initial_value = ""
-        if state().preferences.last_project_path is not None:
-            initial_value = os.fspath(state().preferences.last_project_path)
+        self.game = Game.ECHOES
+        preferences = state().preferences
+
+        last_project = ""
+        if preferences.last_project_path is not None:
+            last_project = os.fspath(preferences.last_project_path)
+
+        iso_path = ""
+        if self.game in preferences.game_iso_paths:
+            iso_path = os.fspath(preferences.game_iso_paths[self.game])
+
+        self._iso_prompt = IsoPrompt(iso_path, False)
 
         self.project_prompt = FilePrompt(
             "Project File",
             "Path to the PWIME Project file",
             "Select File",
             ["*.pwimep"],
-            initial_value,
+            last_project,
             validate_project_file,
             save_file=False,
         )
@@ -102,14 +112,18 @@ class OpenProjectPopup(ConfirmCancelActionPopup):
 
     def render_modal(self) -> bool:
         self.project_prompt.render()
+        self._iso_prompt.render()
         return super().render_modal()
 
     def _valdiate(self) -> bool:
-        return self.project_prompt.validate()
+        return self.project_prompt.validate() and self._iso_prompt.validate()
 
     def _perform_action(self) -> None:
         preferences = state().preferences
         preferences.last_project_path = Path(self.project_prompt.value)
+        preferences.game_iso_paths[self.game] = Path(self._iso_prompt.value)
+
+        state().load_iso(self.game, preferences.game_iso_paths[self.game])
         state().open_project(preferences.last_project_path)
         preferences.write_to_user_home()
 

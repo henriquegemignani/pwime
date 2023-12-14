@@ -439,3 +439,35 @@ class ScriptInstanceState(hello_imgui.DockableWindow):
             imgui.table_headers_row()
             render_property(props, PropReference(InstanceReference(mlvl_id, area.mrea_asset_id, instance.id), ()))
             imgui.end_table()
+
+        if imgui.begin_table(
+                "Connections", 4, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable
+        ):
+            imgui.table_setup_column("State")
+            imgui.table_setup_column("Message")
+            imgui.table_setup_column("Target Id")
+            imgui.table_setup_column("Target Name")
+            imgui.table_headers_row()
+
+            for connection in instance.connections:
+                imgui.table_next_row()
+                imgui.table_next_column()
+                imgui.text(connection.state.name)
+                imgui.table_next_column()
+                imgui.text(connection.message.name)
+                imgui.table_next_column()
+                imgui.text(f"{connection.target}")
+                imgui.table_next_column()
+
+                if connection.target == instance.id:
+                    target_description = "Self"
+                else:
+                    try:
+                        target = area.get_instance(connection.target)
+                        target_description = f"{target.type.__name__} - {target.name}"
+                    except KeyError:
+                        target_description = "Missing"
+
+                imgui.text(target_description)
+
+            imgui.end_table()
