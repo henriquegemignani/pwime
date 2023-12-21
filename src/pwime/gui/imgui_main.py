@@ -7,7 +7,8 @@ import typing
 from pathlib import Path
 
 import humanize
-from imgui_bundle import hello_imgui, imgui, immapp
+from imgui_bundle import hello_imgui, imgui, immapp, imgui_node_editor
+import imgui_bundle
 from retro_data_structures.game_check import Game
 
 from pwime.gui.gui_state import state
@@ -271,4 +272,12 @@ def run_gui(args: argparse.Namespace) -> None:
 
     focus_on_file_list()
 
-    immapp.run(runner_params=runner_params)
+    config = imgui_node_editor.Config()
+
+    addon_params = immapp.AddOnsParams()
+    addon_params.with_node_editor_config = config
+
+    immapp.run(
+        runner_params=runner_params,
+        add_ons_params=addon_params,
+    )
