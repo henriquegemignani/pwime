@@ -10,7 +10,13 @@ from pwime.util import imgui_helper
 class PathPrompt:
     _prompt_dialog: portable_file_dialogs.select_folder | portable_file_dialogs.open_file | None = None
 
-    def __init__(self, title: str, prompt_text: str, initial_value: str, validator: typing.Callable[[str], bool]):
+    def __init__(
+        self,
+        title: str,
+        prompt_text: str,
+        initial_value: str,
+        validator: typing.Callable[[str], bool],
+    ):
         self._title = title
         self._prompt_text = prompt_text
         self.value = initial_value

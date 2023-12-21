@@ -40,7 +40,6 @@ class NewProjectPopup(CurrentImguiPopup):
             "Where to create project",
             "",
             validate_project_path,
-            False,
         )
 
     def _valid_project_path(self) -> bool:
