@@ -4,7 +4,6 @@ import dataclasses
 import enum
 import functools
 import typing
-import functools
 
 from imgui_bundle import hello_imgui, imgui
 from retro_data_structures.formats.script_object import Connection
@@ -54,7 +53,6 @@ class PropertyRenderer(typing.Generic[T]):
     def __init__(self, item: T, field: dataclasses.Field):
         self.item = item
         self.field = field
-        self.owner = None
 
     @classmethod
     def matches(cls, item: object, field: dataclasses.Field) -> typing.Self | None:
