@@ -4,6 +4,7 @@ import dataclasses
 import enum
 import functools
 import typing
+import functools
 
 from imgui_bundle import hello_imgui, imgui
 from retro_data_structures.formats.script_object import Connection
@@ -11,6 +12,7 @@ from retro_data_structures.base_resource import AssetId
 from retro_data_structures.properties.base_color import BaseColor
 from retro_data_structures.properties.base_property import BaseProperty
 from retro_data_structures.properties.base_vector import BaseVector
+from retro_data_structures.properties.base_spline import Knot
 
 from pwime.gui.gui_state import FilteredAssetList, state
 from pwime.util import imgui_helper
@@ -52,6 +54,7 @@ class PropertyRenderer(typing.Generic[T]):
     def __init__(self, item: T, field: dataclasses.Field):
         self.item = item
         self.field = field
+        self.owner = None
 
     @classmethod
     def matches(cls, item: object, field: dataclasses.Field) -> typing.Self | None:
@@ -331,6 +334,137 @@ class IntRenderer(PropertyRenderer[int]):
             imgui.input_int(f"##{self.field.name}", self.item),
         )
 
+def render_knot_field_begin(name: str, fields: tuple[dataclasses.Field]) -> dataclasses.Field:
+    field: dataclasses.Field
+    field = next(filter(lambda f: f.name == name, fields), None)
+    assert field is not None
+    
+    imgui.table_next_row()
+    imgui.table_next_column()
+    
+    if "asset_types" in field.metadata:
+        type_name = f"AssetId ({'/'.join(field.metadata['asset_types'])})"
+    else:
+        type_name = field.type
+    
+    imgui.text(field.name)
+    
+    imgui.table_next_column()
+    imgui.text(type_name)
+    imgui.table_next_column()
+    
+    return field
+
+def render_knot_field_end() -> None:
+    pass
+
+def submit_imgui_knot_results(field: str, reference: PropReference, imgui_result: tuple[bool, object], knot: Knot, knots: list[Knot], factory: type | None = None) -> None:
+    if imgui_result[0]:
+        setattr(knot, field, factory(imgui_result[1]) if factory is not None else imgui_result[1])
+        submit_edit_for(reference, knots)
+
+class KnotListRenderer(PropertyRenderer[list[Knot]]):
+    """Renders the list of Knots."""
+
+    @classmethod
+    def matches(cls, item: object, field: dataclasses.Field) -> typing.Self | None:
+        if isinstance(item, list) and field.name == "knots":
+            return cls(item, field)
+        return None
+
+    def render(self, reference: PropReference) -> None:
+        knots: list[Knot] = self.item
+        
+        if imgui.begin_table(
+                "Knnots", 2, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable
+        ):
+            imgui.table_setup_column("Index")
+            imgui.table_setup_column("Value")
+            
+            i: int = 0
+            knot: Knot
+            for knot in knots:
+                imgui.table_headers_row()
+
+                imgui.table_next_row()
+                imgui.table_next_column()
+
+                imgui.text(str(i))
+                imgui.table_next_column()
+
+                if imgui.begin_table(f"Knot{i}", 3, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable):
+                    imgui.table_setup_column("Name")
+                    imgui.table_setup_column("Type")
+                    imgui.table_setup_column("Value")
+                    imgui.table_headers_row()
+
+                    # ================================================================================
+                    assert dataclasses.is_dataclass(knot)
+                    fields: tuple[dataclasses.Field] = dataclasses.fields(knot)
+                    field: dataclasses.Field
+                    
+                    if knot.cached_tangents_a is None:
+                        knot.cached_tangents_a = (float(0.0), float(0.0))
+                    
+                    if knot.cached_tangents_b is None:
+                        knot.cached_tangents_b = (float(0.0), float(0.0))
+
+                    field = render_knot_field_begin("time", fields)
+                    submit_imgui_knot_results("time", reference, imgui.input_float(f"##{field.name}", knot.time), knot, knots)
+                    render_knot_field_end()
+
+                    field = render_knot_field_begin("amplitude", fields)
+                    submit_imgui_knot_results("amplitude", reference, imgui.input_float(f"##{field.name}", knot.amplitude), knot, knots)
+                    render_knot_field_end()
+
+                    field = render_knot_field_begin("unk_a", fields)
+                    submit_imgui_knot_results("unk_a", reference, imgui.input_int(f"##{field.name}", knot.unk_a), knot, knots)
+                    render_knot_field_end()
+
+                    field = render_knot_field_begin("unk_b", fields)
+                    submit_imgui_knot_results("unk_b", reference, imgui.input_int(f"##{field.name}", knot.unk_b), knot, knots)
+                    render_knot_field_end()
+
+                    field = render_knot_field_begin("cached_tangents_a", fields)
+                    if knot.unk_a == 5:
+                        submit_imgui_knot_results("cached_tangents_a", reference, imgui.input_float2(f"##{self.field.name}", list(knot.cached_tangents_a)), knot, knots, tuple)
+                    else:
+                        imgui.text("N/A")
+                    render_knot_field_end()
+
+                    field = render_knot_field_begin("cached_tangents_b", fields)
+                    if knot.unk_b == 5:
+                        submit_imgui_knot_results("cached_tangents_b", reference, imgui.input_float2(f"##{self.field.name}", list(knot.cached_tangents_b)), knot, knots, tuple)
+                    else:
+                        imgui.text("N/A")
+                    render_knot_field_end()
+                    # ================================================================================
+
+                    imgui.end_table()
+
+                imgui.table_next_column()
+                i += 1
+
+            imgui.end_table()
+
+        if imgui.begin_table("Add/Remove", 2):
+            imgui.table_setup_column("Content")
+
+            imgui.table_next_row()
+            imgui.table_next_column()
+
+            if imgui.button("-"):
+                knots.pop()
+                submit_edit_for(reference, knots)
+
+            imgui.table_next_column()
+
+            if imgui.button("+"):
+                knots.append(Knot())
+                submit_edit_for(reference, knots)
+
+            imgui.end_table()
+
 
 class UnknownPropertyRenderer(PropertyRenderer):
     """Renders the property by casting to text. Can't edit."""
@@ -354,6 +488,7 @@ ALL_PROPERTY_RENDERERS = [
     StringRenderer,
     BoolRenderer,
     IntRenderer,
+    KnotListRenderer,
     UnknownPropertyRenderer,
 ]
 
