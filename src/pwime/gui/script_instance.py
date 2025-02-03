@@ -458,7 +458,10 @@ class KnotListRenderer(PropertyRenderer[list[Knot]]):
             imgui.table_next_column()
 
             if imgui.button("+"):
-                knots.append(Knot())
+                try:
+                    knots.append(Knot())
+                except TypeError:
+                    knots.append(Knot(float(0.0), float(0.0), 0, 0, (float(0.0), float(0.0)), (float(0.0), float(0.0))))
                 submit_edit_for(reference, knots)
 
             imgui.end_table()
