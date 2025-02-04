@@ -359,6 +359,19 @@ def render_knot_field_end() -> None:
 def submit_imgui_knot_results(field: str, reference: PropReference, imgui_result: tuple[bool, object], knot: Knot, knots: list[Knot], factory: type | None = None) -> None:
     if imgui_result[0]:
         setattr(knot, field, factory(imgui_result[1]) if factory is not None else imgui_result[1])
+
+        if knot.unk_a == 5:
+            if knot.cached_tangents_a is None:
+                knot.cached_tangents_a = (0.0, 0.0)
+        else:
+            knot.cached_tangents_a = None
+
+        if knot.unk_b == 5:
+            if knot.cached_tangents_b is None:
+                knot.cached_tangents_b = (0.0, 0.0)
+        else:
+            knot.cached_tangents_b = None
+
         submit_edit_for(reference, knots)
 
 class KnotListRenderer(PropertyRenderer[list[Knot]]):
@@ -419,27 +432,15 @@ class KnotListRenderer(PropertyRenderer[list[Knot]]):
 
                     field = render_knot_field_begin("cached_tangents_a", fields)
                     if knot.unk_a == 5:
-                        knot.cached_tangents_a = (0.0, 0.0)
-                        submit_edit_for(reference, knots)
-                        
                         submit_imgui_knot_results("cached_tangents_a", reference, imgui.input_float2(f"##{self.field.name}", list(knot.cached_tangents_a)), knot, knots, tuple)
                     else:
-                        knot.cached_tangents_a = None
-                        submit_edit_for(reference, knots)
-                        
                         imgui.text("N/A")
                     render_knot_field_end()
 
                     field = render_knot_field_begin("cached_tangents_b", fields)
                     if knot.unk_b == 5:
-                        knot.cached_tangents_b = (0.0, 0.0)
-                        submit_edit_for(reference, knots)
-                        
                         submit_imgui_knot_results("cached_tangents_b", reference, imgui.input_float2(f"##{self.field.name}", list(knot.cached_tangents_b)), knot, knots, tuple)
                     else:
-                        knot.cached_tangents_b = None
-                        submit_edit_for(reference, knots)
-                        
                         imgui.text("N/A")
                     render_knot_field_end()
                     # ================================================================================
