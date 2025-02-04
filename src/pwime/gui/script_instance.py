@@ -400,12 +400,6 @@ class KnotListRenderer(PropertyRenderer[list[Knot]]):
                     assert dataclasses.is_dataclass(knot)
                     fields: tuple[dataclasses.Field] = dataclasses.fields(knot)
                     field: dataclasses.Field
-                    
-                    if knot.cached_tangents_a is None:
-                        knot.cached_tangents_a = (float(0.0), float(0.0))
-                    
-                    if knot.cached_tangents_b is None:
-                        knot.cached_tangents_b = (float(0.0), float(0.0))
 
                     field = render_knot_field_begin("time", fields)
                     submit_imgui_knot_results("time", reference, imgui.input_float(f"##{field.name}", knot.time), knot, knots)
@@ -425,15 +419,27 @@ class KnotListRenderer(PropertyRenderer[list[Knot]]):
 
                     field = render_knot_field_begin("cached_tangents_a", fields)
                     if knot.unk_a == 5:
+                        knot.cached_tangents_a = (0.0, 0.0)
+                        submit_edit_for(reference, knots)
+                        
                         submit_imgui_knot_results("cached_tangents_a", reference, imgui.input_float2(f"##{self.field.name}", list(knot.cached_tangents_a)), knot, knots, tuple)
                     else:
+                        knot.cached_tangents_a = None
+                        submit_edit_for(reference, knots)
+                        
                         imgui.text("N/A")
                     render_knot_field_end()
 
                     field = render_knot_field_begin("cached_tangents_b", fields)
                     if knot.unk_b == 5:
+                        knot.cached_tangents_b = (0.0, 0.0)
+                        submit_edit_for(reference, knots)
+                        
                         submit_imgui_knot_results("cached_tangents_b", reference, imgui.input_float2(f"##{self.field.name}", list(knot.cached_tangents_b)), knot, knots, tuple)
                     else:
+                        knot.cached_tangents_b = None
+                        submit_edit_for(reference, knots)
+                        
                         imgui.text("N/A")
                     render_knot_field_end()
                     # ================================================================================
@@ -461,7 +467,7 @@ class KnotListRenderer(PropertyRenderer[list[Knot]]):
                 try:
                     knots.append(Knot())
                 except TypeError:
-                    knots.append(Knot(float(0.0), float(0.0), 0, 0, (float(0.0), float(0.0)), (float(0.0), float(0.0))))
+                    knots.append(Knot(0.0, 0.0, 0, 0, None, None))
                 submit_edit_for(reference, knots)
 
             imgui.end_table()
