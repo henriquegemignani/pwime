@@ -15,6 +15,7 @@ from pwime.gui.gui_state import state
 from pwime.gui.gui_tools import FilePrompt, IsoPrompt
 from pwime.gui.popup import CurrentImguiPopup, ConfirmCancelActionPopup
 from pwime.gui.project_popup import NewProjectPopup, validate_project_file
+from pwime.gui.select_iso_popup import SelectIsoPopup
 from pwime.util import imgui_helper
 
 if typing.TYPE_CHECKING:
@@ -180,11 +181,11 @@ def _show_menu() -> None:
                 state().project = None
 
         imgui.end_menu()
-    #
-    # if imgui.begin_menu("Preferences"):
-    #     if imgui.menu_item("Metroid Prime 2 ISO", "", False)[0]:
-    #         state().current_popup = SelectPrime2IsoPopup()
-    #     imgui.end_menu()
+
+    if imgui.begin_menu("Preferences"):
+        if imgui.menu_item("Select ISOs", "", False)[0]:
+            state().current_popup = SelectIsoPopup(state().preferences)
+        imgui.end_menu()
 
     if state().current_popup is not None:
         if not state().current_popup.render():

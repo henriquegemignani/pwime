@@ -91,9 +91,9 @@ class FilePrompt(PathPrompt):
 
 
 class IsoPrompt(FilePrompt):
-    def __init__(self, initial_value: str, save_file: bool):
+    def __init__(self, initial_value: str, save_file: bool, title: str = "Game ISO"):
         super().__init__(
-            "Game ISO",
+            title,
             "Path to a game ISO",
             "Select ISO",
             ["*.iso"],
