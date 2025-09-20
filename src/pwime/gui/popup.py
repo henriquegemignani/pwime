@@ -44,16 +44,16 @@ class CurrentImguiPopup(CurrentPopup):
 class ConfirmCancelActionPopup(CurrentImguiPopup):
     _confirm_action_text: str = "Confirm"
 
-    def _valdiate() -> bool:
+    def _validate(self) -> bool:
         raise NotImplementedError
 
-    def _perform_action() -> None:
+    def _perform_action(self) -> None:
         raise NotImplementedError
 
     def render_modal(self) -> bool:
         result = True
 
-        with imgui_helper.disabled(not self._valdiate()):
+        with imgui_helper.disabled(not self._validate()):
             if imgui.button(self._confirm_action_text):
                 self._perform_action()
                 result = False

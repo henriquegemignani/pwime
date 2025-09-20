@@ -117,7 +117,7 @@ class OpenProjectPopup(ConfirmCancelActionPopup):
         self._iso_prompt.render()
         return super().render_modal()
 
-    def _valdiate(self) -> bool:
+    def _validate(self) -> bool:
         return self.project_prompt.validate() and self._iso_prompt.validate()
 
     def _perform_action(self) -> None:
@@ -150,7 +150,7 @@ class ExportProjectPopup(ConfirmCancelActionPopup):
         self.iso_prompt.render()
         return super().render_modal()
 
-    def _valdiate(self) -> bool:
+    def _validate(self) -> bool:
         return self.iso_prompt.validate()
 
     def _perform_action(self) -> None:
