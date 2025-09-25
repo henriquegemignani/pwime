@@ -5,6 +5,7 @@ from retro_data_structures.exceptions import UnknownAssetId
 from retro_data_structures.formats import Mlvl
 
 from pwime.gui.editor.base_window import BaseWindow
+from pwime.gui.editor.mrea_window import MreaWindow
 from pwime.gui.gui_state import state
 
 
@@ -37,6 +38,6 @@ class MlvlWindow(BaseWindow[Mlvl]):
                     False,
                     imgui.SelectableFlags_.span_all_columns,
                 )[1]:
-                    state().area_state.open_area(area)
+                    state().open_editor_for(area.mrea_asset_id, MreaWindow)
 
             imgui.end_table()

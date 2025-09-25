@@ -293,7 +293,6 @@ def run_gui(args: argparse.Namespace) -> None:
         return window
 
     add_dockable_window("File List", main_gui)
-    dockable_windows.append(state().area_state.create_imgui_window())
     dockable_windows.append(state().instance_state.create_imgui_window())
     add_dockable_window("History", render_history).is_visible = False
 

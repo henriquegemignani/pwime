@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
     from imgui_bundle import portable_file_dialogs
 
-    from pwime.gui.area import AreaState
+    from pwime.gui.editor.mrea_window import MreaWindow
     from pwime.gui.script_instance import ScriptInstanceState
 
 
@@ -32,7 +32,6 @@ class FilteredAssetList(typing.NamedTuple):
 
 @dataclasses.dataclass()
 class GuiState:
-    area_state: AreaState
     instance_state: ScriptInstanceState
     preferences: Preferences
     editors: dict[int, BaseWindow] = dataclasses.field(default_factory=dict)
@@ -90,7 +89,6 @@ class GuiState:
 
 @functools.cache
 def state() -> GuiState:
-    from pwime.gui.area import AreaState
     from pwime.gui.script_instance import ScriptInstanceState
 
-    return GuiState(AreaState(), ScriptInstanceState(), Preferences())
+    return GuiState(ScriptInstanceState(), Preferences())

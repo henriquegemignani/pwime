@@ -6,46 +6,35 @@ from imgui_bundle import hello_imgui, imgui
 from imgui_bundle import (
     imgui_node_editor as ed,
 )
+from retro_data_structures.formats import Mlvl, Mrea
 
+from pwime.gui.editor.base_window import BaseWindow
 from pwime.gui.gui_state import state
 
 if TYPE_CHECKING:
-    from retro_data_structures.formats.mrea import Area
+    from retro_data_structures.formats.mrea import Area, Mrea
     from retro_data_structures.properties.echoes.archetypes.EditorProperties import EditorProperties
 
 
-class AreaState(hello_imgui.DockableWindow):
-    area: Area | None = None
+class MreaWindow(BaseWindow[Mrea]):
+    area: Area
     filter: str = ""
-    window_label: str = "Area###Area"
     show_object_list: bool = True
     layer_states: dict[int, bool]
     has_position: set[int]
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, asset_id: int):
+        manager = state().asset_manager
+        mlvl = manager.get_file(manager.find_mlvl_for_mrea(asset_id), type_hint=Mlvl)
+        self.area = mlvl.get_area(asset_id)
+        
+        super().__init__(asset_id)
         self.layer_states = {}
         self.has_position = set()
 
-    def create_imgui_window(self) -> hello_imgui.DockableWindow:
-        result = hello_imgui.DockableWindow(
-            self.window_label,
-            "MainDockSpace",
-            self.render,
-            is_visible_=False,
-        )
-        result.include_in_view_menu = False
-        result.remember_is_visible = False
-        return result
-
-    def open_area(self, area: Area) -> None:
-        self.area = area
-
-        window = hello_imgui.get_runner_params().docking_params.dockable_window_of_name(self.window_label)
-        window.is_visible = True
-
-        self.window_label = f"{self.area.name}###Area"
-        window.label = self.window_label
+    @property
+    def window_label(self):
+        return self.area.name
 
     def _render_object_list(self) -> None:
         changed, new_text = imgui.input_text("Filter Objects", self.filter)
@@ -136,9 +125,6 @@ class AreaState(hello_imgui.DockableWindow):
         ed.end()
 
     def render(self):
-        if self.area is None:
-            return
-
         if imgui.radio_button("Object List", self.show_object_list):
             self.show_object_list = True
         imgui.same_line()
