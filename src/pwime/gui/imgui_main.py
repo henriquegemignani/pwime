@@ -21,10 +21,29 @@ from pwime.util import imgui_helper
 if typing.TYPE_CHECKING:
     import argparse
 
+POSSIBLE_ASSET_TYPES = [
+    "MLVL",
+    "STRG",
+]
+
 
 def main_gui() -> None:
     asset_manager = state().asset_manager
     if asset_manager is not None:
+        imgui.text("Formats?")
+        for fmt in POSSIBLE_ASSET_TYPES:
+            imgui.same_line()
+            changed, check = imgui.checkbox(fmt, fmt in state().selected_asset_types)
+            if changed:
+                if check:
+                    state().selected_asset_types.add(fmt)
+                else:
+                    state().selected_asset_types.remove(fmt)
+
+        changed, asset_filter = imgui.input_text("Filter Assets", state().asset_filter)
+        if changed:
+            state().asset_filter = asset_filter
+
         if imgui.begin_table("All Assets", 3, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h):
             imgui.table_setup_column("Type", imgui.TableColumnFlags_.width_fixed)
             imgui.table_setup_column("Asset Id", imgui.TableColumnFlags_.width_fixed)
@@ -32,7 +51,14 @@ def main_gui() -> None:
 
             imgui.table_headers_row()
 
-            for i in state().global_file_list:
+            for i in asset_manager.all_asset_ids():
+                if asset_manager.get_asset_type(i) not in state().selected_asset_types:
+                    continue
+
+                asset_name = asset_manager.asset_names.get(i, "<unknown>")
+                if state().asset_filter not in asset_name:
+                    continue
+
                 imgui.table_next_row()
 
                 imgui.table_next_column()
@@ -44,7 +70,11 @@ def main_gui() -> None:
                         False,
                         imgui.SelectableFlags_.span_all_columns,
                 )[1]:
-                    state().mlvl_state.open_mlvl(i)
+                    match asset_manager.get_asset_type(i):
+                        case "MLVL":
+                            state().mlvl_state.open_mlvl(i)
+                        case _:
+                            print("UNKNOWN!")
 
                 imgui.table_next_column()
                 imgui.text_disabled(asset_manager.asset_names.get(i, "<unknown>"))

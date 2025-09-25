@@ -4,7 +4,6 @@ import os
 import tempfile
 import typing
 from pathlib import Path
-import nod
 
 from retro_data_structures.game_check import Game
 
@@ -83,6 +82,7 @@ class Project:
         return result
 
     def export_to(self, path: Path) -> None:
+        import nod
         context = nod.ExtractionContext()
 
         self.asset_manager.flush_modified_assets()

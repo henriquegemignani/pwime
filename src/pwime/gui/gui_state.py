@@ -38,11 +38,12 @@ class GuiState:
     file_providers: dict[Game, IsoFileProvider] = dataclasses.field(default_factory=dict)
     project: Project | None = None
     current_project_path: Path | None = None
-    global_file_list: tuple[int, ...] = ()
     current_popup: CurrentPopup | None = None
     open_file_dialog: portable_file_dialogs.open_file = None
     selected_asset: int | None = None
     pending_pre_frame_tasks: list[typing.Callable[[], None]] = dataclasses.field(default_factory=list)
+    selected_asset_types: set[str] = dataclasses.field(default_factory=lambda: {"MLVL"})
+    asset_filter: str = ""
 
     @property
     def asset_manager(self) -> OurAssetManager | None:
@@ -53,15 +54,6 @@ class GuiState:
     def open_project(self, path: Path) -> None:
         self.project = Project.load_from_file(path, self.file_providers)
         self.current_project_path = path
-
-        global_file_types = {
-            "MLVL",
-        }
-
-        manager = self.project.asset_manager
-        self.global_file_list = tuple(
-            i for i in manager.all_asset_ids() if manager.get_asset_type(i) in global_file_types
-        )
 
     def filtered_asset_list(self, asset_types: frozenset[str], name_filter: str) -> FilteredAssetList:
         return FilteredAssetList(
