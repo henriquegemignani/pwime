@@ -79,9 +79,13 @@ class GuiState:
             self.open_project(self.preferences.last_project_path)
 
     def open_editor_for(self, asset_id: int, window_class: type[BaseWindow]) -> None:
+        docking_params = hello_imgui.get_runner_params().docking_params
         if asset_id not in self.editors:
             self.editors[asset_id] = window_class(asset_id)
-            hello_imgui.add_dockable_window(self.editors[asset_id].create_imgui_window())
+            hello_imgui.add_dockable_window(self.editors[asset_id].window)
+        else:
+            window = docking_params.dockable_window_of_name(self.editors[asset_id].window.label)
+            window.is_visible = True
 
 
 @functools.cache
