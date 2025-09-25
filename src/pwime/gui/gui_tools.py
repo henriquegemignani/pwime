@@ -1,8 +1,7 @@
 import typing
 from pathlib import Path
 
-from imgui_bundle import imgui
-from imgui_bundle import portable_file_dialogs
+from imgui_bundle import imgui, portable_file_dialogs
 
 from pwime.util import imgui_helper
 
@@ -44,7 +43,7 @@ class PathPrompt:
                 self._prompt_dialog = None
 
     def _render_select_path_button(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 def _valid_existing_iso_path(path: str) -> bool:

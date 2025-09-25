@@ -6,15 +6,13 @@ import functools
 import typing
 
 from imgui_bundle import hello_imgui, imgui
-from retro_data_structures.formats.script_object import Connection
 from retro_data_structures.base_resource import AssetId
 from retro_data_structures.properties.base_color import BaseColor
 from retro_data_structures.properties.base_property import BaseProperty
-from retro_data_structures.properties.base_vector import BaseVector
 from retro_data_structures.properties.base_spline import Knot
+from retro_data_structures.properties.base_vector import BaseVector
 
 from pwime.gui.gui_state import FilteredAssetList, state
-from pwime.util import imgui_helper
 from pwime.operations.script_instance import (
     InstanceReference,
     PropReference,
@@ -22,10 +20,11 @@ from pwime.operations.script_instance import (
     create_patch_for,
     get_instance,
 )
+from pwime.util import imgui_helper
 
 if typing.TYPE_CHECKING:
     from retro_data_structures.formats.mrea import Area
-    from retro_data_structures.formats.script_object import ScriptInstance
+    from retro_data_structures.formats.script_object import Connection, ScriptInstance
 
 T = typing.TypeVar("T")
 
@@ -49,7 +48,7 @@ def submit_imgui_results(reference: PropReference, imgui_result: tuple[bool, obj
         submit_edit_for(reference, imgui_result[1])
 
 
-class PropertyRenderer(typing.Generic[T]):
+class PropertyRenderer[T]:
     def __init__(self, item: T, field: dataclasses.Field):
         self.item = item
         self.field = field
@@ -141,12 +140,12 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
             asset_filter = imgui.input_text("Filter Assets", cached_asset_list.filter)[1]
 
             if imgui.begin_table(
-                    "All Assets",
-                    2,
-                    imgui.TableFlags_.row_bg
-                    | imgui.TableFlags_.borders_h
-                    | imgui.TableFlags_.scroll_y
-                    | imgui.TableFlags_.sortable,
+                "All Assets",
+                2,
+                imgui.TableFlags_.row_bg
+                | imgui.TableFlags_.borders_h
+                | imgui.TableFlags_.scroll_y
+                | imgui.TableFlags_.sortable,
             ):
                 imgui.table_setup_column("Asset Id", imgui.TableColumnFlags_.width_fixed)
                 imgui.table_setup_column("Name")
@@ -204,9 +203,9 @@ class AssertIdRenderer(PropertyRenderer[AssetId]):
 
                         imgui.table_next_column()
                         if imgui.selectable(
-                                f"{asset:08X}",
-                                False,
-                                imgui.SelectableFlags_.span_all_columns,
+                            f"{asset:08X}",
+                            False,
+                            imgui.SelectableFlags_.span_all_columns,
                         )[1]:
                             submit_edit_for(reference, asset)
                             imgui.close_current_popup()
@@ -332,28 +331,37 @@ class IntRenderer(PropertyRenderer[int]):
             imgui.input_int(f"##{self.field.name}", self.item),
         )
 
+
 def render_knot_field_begin(name: str, fields: tuple[dataclasses.Field]) -> dataclasses.Field:
     field: dataclasses.Field
     field = next(filter(lambda f: f.name == name, fields), None)
     assert field is not None
-    
+
     imgui.table_next_row()
     imgui.table_next_column()
-    
+
     if "asset_types" in field.metadata:
         type_name = f"AssetId ({'/'.join(field.metadata['asset_types'])})"
     else:
         type_name = field.type
-    
+
     imgui.text(field.name)
-    
+
     imgui.table_next_column()
     imgui.text(type_name)
     imgui.table_next_column()
-    
+
     return field
 
-def submit_imgui_knot_results(field: str, reference: PropReference, imgui_result: tuple[bool, object], knot: Knot, knots: list[Knot], factory: type | None = None) -> None:
+
+def submit_imgui_knot_results(
+    field: str,
+    reference: PropReference,
+    imgui_result: tuple[bool, object],
+    knot: Knot,
+    knots: list[Knot],
+    factory: type | None = None,
+) -> None:
     if imgui_result[0]:
         setattr(knot, field, factory(imgui_result[1]) if factory is not None else imgui_result[1])
 
@@ -371,6 +379,7 @@ def submit_imgui_knot_results(field: str, reference: PropReference, imgui_result
 
         submit_edit_for(reference, knots)
 
+
 class KnotListRenderer(PropertyRenderer[list[Knot]]):
     """Renders the list of Knots."""
 
@@ -382,13 +391,13 @@ class KnotListRenderer(PropertyRenderer[list[Knot]]):
 
     def render(self, reference: PropReference) -> None:
         knots: list[Knot] = self.item
-        
+
         if imgui.begin_table(
-                "Knnots", 2, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable
+            "Knnots", 2, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable
         ):
             imgui.table_setup_column("Index")
             imgui.table_setup_column("Value")
-            
+
             i: int = 0
             knot: Knot
             for knot in knots:
@@ -400,7 +409,9 @@ class KnotListRenderer(PropertyRenderer[list[Knot]]):
                 imgui.text(str(i))
                 imgui.table_next_column()
 
-                if imgui.begin_table(f"Knot{i}", 3, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable):
+                if imgui.begin_table(
+                    f"Knot{i}", 3, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable
+                ):
                     imgui.table_setup_column("Name")
                     imgui.table_setup_column("Type")
                     imgui.table_setup_column("Value")
@@ -412,26 +423,48 @@ class KnotListRenderer(PropertyRenderer[list[Knot]]):
                     field: dataclasses.Field
 
                     field = render_knot_field_begin("time", fields)
-                    submit_imgui_knot_results("time", reference, imgui.input_float(f"##{field.name}", knot.time), knot, knots)
+                    submit_imgui_knot_results(
+                        "time", reference, imgui.input_float(f"##{field.name}", knot.time), knot, knots
+                    )
 
                     field = render_knot_field_begin("amplitude", fields)
-                    submit_imgui_knot_results("amplitude", reference, imgui.input_float(f"##{field.name}", knot.amplitude), knot, knots)
+                    submit_imgui_knot_results(
+                        "amplitude", reference, imgui.input_float(f"##{field.name}", knot.amplitude), knot, knots
+                    )
 
                     field = render_knot_field_begin("unk_a", fields)
-                    submit_imgui_knot_results("unk_a", reference, imgui.input_int(f"##{field.name}", knot.unk_a), knot, knots)
+                    submit_imgui_knot_results(
+                        "unk_a", reference, imgui.input_int(f"##{field.name}", knot.unk_a), knot, knots
+                    )
 
                     field = render_knot_field_begin("unk_b", fields)
-                    submit_imgui_knot_results("unk_b", reference, imgui.input_int(f"##{field.name}", knot.unk_b), knot, knots)
+                    submit_imgui_knot_results(
+                        "unk_b", reference, imgui.input_int(f"##{field.name}", knot.unk_b), knot, knots
+                    )
 
                     field = render_knot_field_begin("cached_tangents_a", fields)
                     if knot.unk_a == 5:
-                        submit_imgui_knot_results("cached_tangents_a", reference, imgui.input_float2(f"##{self.field.name}", list(knot.cached_tangents_a)), knot, knots, tuple)
+                        submit_imgui_knot_results(
+                            "cached_tangents_a",
+                            reference,
+                            imgui.input_float2(f"##{self.field.name}", list(knot.cached_tangents_a)),
+                            knot,
+                            knots,
+                            tuple,
+                        )
                     else:
                         imgui.text("N/A")
 
                     field = render_knot_field_begin("cached_tangents_b", fields)
                     if knot.unk_b == 5:
-                        submit_imgui_knot_results("cached_tangents_b", reference, imgui.input_float2(f"##{self.field.name}", list(knot.cached_tangents_b)), knot, knots, tuple)
+                        submit_imgui_knot_results(
+                            "cached_tangents_b",
+                            reference,
+                            imgui.input_float2(f"##{self.field.name}", list(knot.cached_tangents_b)),
+                            knot,
+                            knots,
+                            tuple,
+                        )
                     else:
                         imgui.text("N/A")
                     # ================================================================================
@@ -565,7 +598,7 @@ class ScriptInstanceState(hello_imgui.DockableWindow):
         props = instance.get_properties()
 
         if imgui.begin_table(
-                "Properties", 3, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable
+            "Properties", 3, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable
         ):
             imgui.table_setup_column("Name")
             imgui.table_setup_column("Type")
@@ -575,7 +608,7 @@ class ScriptInstanceState(hello_imgui.DockableWindow):
             imgui.end_table()
 
         if imgui.begin_table(
-                "Connections", 4, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable
+            "Connections", 4, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable
         ):
             imgui.table_setup_column("State")
             imgui.table_setup_column("Message")
@@ -584,6 +617,7 @@ class ScriptInstanceState(hello_imgui.DockableWindow):
             imgui.table_headers_row()
 
             connections = list(instance.connections)
+
             def edit_connection(index: int, conn: Connection) -> None:
                 # TODO: make operation
                 connections[index] = conn

@@ -13,6 +13,7 @@ class CurrentPopup:
 
 class CurrentImguiPopup(CurrentPopup):
     """Renders an imgui popup_modal as the popup"""
+
     _open_popup: bool = True
 
     def _popup_name(self) -> str:

@@ -34,7 +34,7 @@ class InstanceReference:
 
     @classmethod
     def from_json(cls, data: JsonObject) -> typing.Self:
-        data_json = typing.cast(dict[str, int], data)
+        data_json = typing.cast("dict[str, int]", data)
         return cls(data_json["mlvl"], data_json["mrea"], InstanceId(data["instance_id"]))
 
 
@@ -91,7 +91,7 @@ def create_patch_for(instance: ScriptInstance, value_path: tuple[str, ...], new_
     return delta
 
 
-def patch_property(prop: PropType, delta: JsonObject) -> None:
+def patch_property[PropType](prop: PropType, delta: JsonObject) -> None:
     for name, reflection in field_reflection.get_reflection(type(prop)).items():
         key = f"0x{reflection.id:08X}"
         if key not in delta:
@@ -103,7 +103,7 @@ def patch_property(prop: PropType, delta: JsonObject) -> None:
             setattr(prop, name, reflection.from_json(delta[key]))
 
 
-class ScriptInstancePropertyEdit(Operation, typing.Generic[PropType]):
+class ScriptInstancePropertyEdit[PropType](Operation):
     """Represents changing a property of an existing script object."""
 
     reference: InstanceReference

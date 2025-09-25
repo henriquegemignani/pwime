@@ -1,6 +1,6 @@
 import argparse
-from pathlib import Path
 import typing
+from pathlib import Path
 
 from retro_data_structures.game_check import Game
 
@@ -11,7 +11,7 @@ def game_argument_type(s: str) -> Game:
     except ValueError:
         # not a number, look by name
         for g in Game:
-            g = typing.cast(Game, g)
+            g = typing.cast("Game", g)
             if g.name.lower() == s.lower():
                 return g
         raise ValueError(f"No enum named {s} found")

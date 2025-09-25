@@ -50,10 +50,7 @@ class Preferences:
         return {
             "last_project_path": encode_optional_path(self.last_project_path),
             "last_export_path": encode_optional_path(self.last_export_path),
-            "game_iso_paths": {
-                game.name: str(path)
-                for game, path in self.game_iso_paths.items()
-            }
+            "game_iso_paths": {game.name: str(path) for game, path in self.game_iso_paths.items()},
         }
 
     def write_to_user_home(self) -> None:
@@ -62,7 +59,9 @@ class Preferences:
 
     def write_to_path(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(
-            self.to_json(),
-            indent=4,
-        ))
+        path.write_text(
+            json.dumps(
+                self.to_json(),
+                indent=4,
+            )
+        )

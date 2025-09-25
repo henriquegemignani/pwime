@@ -21,9 +21,7 @@ class SelectIsoPopup(CurrentImguiPopup):
         if self.game in preferences.game_iso_paths:
             iso_path = os.fspath(preferences.game_iso_paths[self.game])
 
-        self._iso_prompt = IsoPrompt(iso_path,
-                                     save_file=False,
-                                     title="Prime 2 ISO")
+        self._iso_prompt = IsoPrompt(iso_path, save_file=False, title="Prime 2 ISO")
 
     def _popup_name(self) -> str:
         return "Select ISOs"

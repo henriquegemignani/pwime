@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from imgui_bundle import hello_imgui, imgui
+from imgui_bundle import hello_imgui
 from retro_data_structures.base_resource import BaseResource
 
 
@@ -11,6 +11,7 @@ class BaseWindow[T: BaseResource]:
 
     def __init__(self, asset_id: int):
         from pwime.gui.gui_state import state
+
         self.asset_id = asset_id
         self.asset = state().asset_manager.get_file(asset_id)
         self.window = self.create_imgui_window()

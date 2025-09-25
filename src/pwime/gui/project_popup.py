@@ -53,8 +53,7 @@ class NewProjectPopup(CurrentImguiPopup):
 
         # Name Row
         modified, new_name = imgui_helper.validated_input_text(
-            "Project Name", self.project_name,
-            self.project_name != ""
+            "Project Name", self.project_name, self.project_name != ""
         )
         if modified:
             self.project_name = new_name

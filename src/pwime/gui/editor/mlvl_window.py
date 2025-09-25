@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from imgui_bundle import hello_imgui, imgui
+from imgui_bundle import imgui
 from retro_data_structures.exceptions import UnknownAssetId
 from retro_data_structures.formats import Mlvl
 

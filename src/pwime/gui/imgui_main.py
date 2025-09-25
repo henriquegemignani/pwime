@@ -7,13 +7,13 @@ import typing
 from pathlib import Path
 
 import humanize
-from imgui_bundle import hello_imgui, imgui, immapp, imgui_node_editor
+from imgui_bundle import hello_imgui, imgui, imgui_node_editor, immapp
 from retro_data_structures.game_check import Game
 
+from pwime.gui.editor.mlvl_window import MlvlWindow
 from pwime.gui.editor.strg_window import StrgWindow
 from pwime.gui.gui_state import state
 from pwime.gui.gui_tools import FilePrompt, IsoPrompt
-from pwime.gui.editor.mlvl_window import MlvlWindow
 from pwime.gui.popup import ConfirmCancelActionPopup
 from pwime.gui.project_popup import NewProjectPopup, validate_project_file
 from pwime.gui.select_iso_popup import SelectIsoPopup
@@ -67,9 +67,9 @@ def main_gui() -> None:
 
                 imgui.table_next_column()
                 if imgui.selectable(
-                        f"{i:08X}",
-                        False,
-                        imgui.SelectableFlags_.span_all_columns,
+                    f"{i:08X}",
+                    False,
+                    imgui.SelectableFlags_.span_all_columns,
                 )[1]:
                     match asset_manager.get_asset_type(i):
                         case "MLVL":
@@ -91,7 +91,7 @@ def render_history() -> None:
     project = state().project
     if project is not None:
         if imgui.begin_table(
-                "History", 2, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.reorderable
+            "History", 2, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.reorderable
         ):
             imgui.table_setup_column("When", imgui.TableColumnFlags_.width_fixed)
             imgui.table_setup_column("Action", imgui.TableColumnFlags_.width_fixed)
@@ -112,7 +112,6 @@ def render_history() -> None:
             imgui.end_table()
     else:
         imgui.text("No project loaded.")
-
 
 
 class OpenProjectPopup(ConfirmCancelActionPopup):
@@ -191,7 +190,6 @@ class ExportProjectPopup(ConfirmCancelActionPopup):
         preferences.last_export_path = Path(self.iso_prompt.value)
         state().project.export_to(preferences.last_export_path)
         preferences.write_to_user_home()
-
 
 
 def _show_menu() -> None:

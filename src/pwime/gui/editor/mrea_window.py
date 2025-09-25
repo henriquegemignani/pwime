@@ -2,17 +2,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from imgui_bundle import hello_imgui, imgui
+from imgui_bundle import imgui
 from imgui_bundle import (
     imgui_node_editor as ed,
 )
 from retro_data_structures.formats import Mlvl, Mrea
+from retro_data_structures.formats.mrea import Mrea
 
 from pwime.gui.editor.base_window import BaseWindow
 from pwime.gui.gui_state import state
 
 if TYPE_CHECKING:
-    from retro_data_structures.formats.mrea import Area, Mrea
+    from retro_data_structures.formats.mrea import Area
     from retro_data_structures.properties.echoes.archetypes.EditorProperties import EditorProperties
 
 
@@ -27,7 +28,7 @@ class MreaWindow(BaseWindow[Mrea]):
         manager = state().asset_manager
         mlvl = manager.get_file(manager.find_mlvl_for_mrea(asset_id), type_hint=Mlvl)
         self.area = mlvl.get_area(asset_id)
-        
+
         super().__init__(asset_id)
         self.layer_states = {}
         self.has_position = set()
@@ -119,7 +120,7 @@ class MreaWindow(BaseWindow[Mrea]):
         for layer in self.area.layers:
             for object in layer.instances:
                 for connection in object.connections:
-                    ed.link(ed.LinkId(i), ed.PinId((connection.target << 1)), ed.PinId((object.id << 1) + 1))
+                    ed.link(ed.LinkId(i), ed.PinId(connection.target << 1), ed.PinId((object.id << 1) + 1))
                     i += 1
 
         ed.end()

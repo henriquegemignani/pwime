@@ -1,16 +1,19 @@
-
 import argparse
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+import tqdm
 from retro_data_structures.asset_manager import IsoFileProvider
 from retro_data_structures.game_check import Game
 
-from retro_data_structures.base_resource import (
-    AssetId,
-    RawResource,
-)
-import tqdm
-
 from pwime.asset_manager import OurAssetManager
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from retro_data_structures.base_resource import (
+        AssetId,
+        RawResource,
+    )
 
 
 def run_cli(args: argparse.Namespace) -> None:

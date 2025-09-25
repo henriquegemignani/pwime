@@ -7,11 +7,7 @@ from typing import TYPE_CHECKING
 
 from imgui_bundle._imgui_bundle import hello_imgui
 from retro_data_structures.asset_manager import IsoFileProvider
-from retro_data_structures.game_check import Game
 
-from pwime.asset_manager import OurAssetManager
-from pwime.gui.editor.base_window import BaseWindow
-from pwime.gui.popup import CurrentPopup
 from pwime.preferences import Preferences
 from pwime.project import Project
 
@@ -19,8 +15,11 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from imgui_bundle import portable_file_dialogs
+    from retro_data_structures.game_check import Game
 
-    from pwime.gui.editor.mrea_window import MreaWindow
+    from pwime.asset_manager import OurAssetManager
+    from pwime.gui.editor.base_window import BaseWindow
+    from pwime.gui.popup import CurrentPopup
     from pwime.gui.script_instance import ScriptInstanceState
 
 
@@ -63,7 +62,7 @@ class GuiState:
                 asset
                 for asset in self.asset_manager.all_asset_ids()
                 if self.asset_manager.get_asset_type(asset) in asset_types
-                   and (not name_filter or name_filter in self.asset_manager.asset_names.get(asset, "<unknown>"))
+                and (not name_filter or name_filter in self.asset_manager.asset_names.get(asset, "<unknown>"))
             ],
         )
 

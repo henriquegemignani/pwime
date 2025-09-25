@@ -37,7 +37,8 @@ def _enum_name(e: enum.Enum) -> str:
         return "None"
     return name
 
-def enum_combo(item: E, label = "") -> tuple[bool, E]:
+
+def enum_combo[E: enum.IntEnum](item: E, label="") -> tuple[bool, E]:
     ordered_enums = list(item.__class__)
     all_names = [_enum_name(it) for it in ordered_enums]
     changed, selected = imgui.combo(label, ordered_enums.index(item), all_names)

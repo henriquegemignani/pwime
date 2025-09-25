@@ -36,7 +36,7 @@ class Project:
         if self.performed_operations:
             last_op = self.performed_operations[-1]
             if now - last_op.moment < self._threshold_to_overwrite and operation.overwrites_operation(
-                    last_op.operation
+                last_op.operation
             ):
                 last_op.operation.undo(self)
                 self.performed_operations.pop()
@@ -58,7 +58,7 @@ class Project:
                     "data": operation.operation.to_json(),
                 }
                 for operation in self.performed_operations
-            ]
+            ],
         }
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(data, indent=4))
@@ -73,16 +73,16 @@ class Project:
 
         result = cls(data["project_name"], manager)
         for op in data["operations"]:
-            result.performed_operations.append(PerformedOperation(
-                serializer.decode_from_json(op["data"]),
-                datetime.datetime.fromisoformat(op["time"])
-            ))
+            result.performed_operations.append(
+                PerformedOperation(serializer.decode_from_json(op["data"]), datetime.datetime.fromisoformat(op["time"]))
+            )
             result.performed_operations[-1].operation.perform(result)
 
         return result
 
     def export_to(self, path: Path) -> None:
-        import nod
+        import nod  # noqa: PLC0415
+
         context = nod.ExtractionContext()
 
         self.asset_manager.flush_modified_assets()
