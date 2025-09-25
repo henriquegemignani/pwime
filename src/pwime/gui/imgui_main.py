@@ -8,12 +8,13 @@ from pathlib import Path
 
 import humanize
 from imgui_bundle import hello_imgui, imgui, immapp, imgui_node_editor
-import imgui_bundle
 from retro_data_structures.game_check import Game
 
+from pwime.gui.editor.strg_window import StrgWindow
 from pwime.gui.gui_state import state
 from pwime.gui.gui_tools import FilePrompt, IsoPrompt
-from pwime.gui.popup import CurrentImguiPopup, ConfirmCancelActionPopup
+from pwime.gui.editor.mlvl_window import MlvlWindow
+from pwime.gui.popup import ConfirmCancelActionPopup
 from pwime.gui.project_popup import NewProjectPopup, validate_project_file
 from pwime.gui.select_iso_popup import SelectIsoPopup
 from pwime.util import imgui_helper
@@ -72,7 +73,9 @@ def main_gui() -> None:
                 )[1]:
                     match asset_manager.get_asset_type(i):
                         case "MLVL":
-                            state().mlvl_state.open_mlvl(i)
+                            state().open_editor_for(i, MlvlWindow)
+                        case "STRG":
+                            state().open_editor_for(i, StrgWindow)
                         case _:
                             print("UNKNOWN!")
 
@@ -290,7 +293,6 @@ def run_gui(args: argparse.Namespace) -> None:
         return window
 
     add_dockable_window("File List", main_gui)
-    dockable_windows.append(state().mlvl_state.create_imgui_window())
     dockable_windows.append(state().area_state.create_imgui_window())
     dockable_windows.append(state().instance_state.create_imgui_window())
     add_dockable_window("History", render_history).is_visible = False

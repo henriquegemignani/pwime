@@ -560,10 +560,9 @@ class ScriptInstanceState(hello_imgui.DockableWindow):
             return
 
         area, instance = self.instance_ref
+        mlvl_id = state().asset_manager.find_mlvl_for_mrea(area.mrea_asset_id)
 
         props = instance.get_properties()
-
-        mlvl_id = state().mlvl_state.mlvl_id
 
         if imgui.begin_table(
                 "Properties", 3, imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable

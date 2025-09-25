@@ -5,10 +5,12 @@ import functools
 import typing
 from typing import TYPE_CHECKING
 
-from retro_data_structures.asset_manager import IsoFileProvider, FileProvider
+from imgui_bundle._imgui_bundle import hello_imgui
+from retro_data_structures.asset_manager import IsoFileProvider
 from retro_data_structures.game_check import Game
 
 from pwime.asset_manager import OurAssetManager
+from pwime.gui.editor.base_window import BaseWindow
 from pwime.gui.popup import CurrentPopup
 from pwime.preferences import Preferences
 from pwime.project import Project
@@ -19,7 +21,6 @@ if TYPE_CHECKING:
     from imgui_bundle import portable_file_dialogs
 
     from pwime.gui.area import AreaState
-    from pwime.gui.mlvl import MlvlState
     from pwime.gui.script_instance import ScriptInstanceState
 
 
@@ -31,10 +32,10 @@ class FilteredAssetList(typing.NamedTuple):
 
 @dataclasses.dataclass()
 class GuiState:
-    mlvl_state: MlvlState
     area_state: AreaState
     instance_state: ScriptInstanceState
     preferences: Preferences
+    editors: dict[int, BaseWindow] = dataclasses.field(default_factory=dict)
     file_providers: dict[Game, IsoFileProvider] = dataclasses.field(default_factory=dict)
     project: Project | None = None
     current_project_path: Path | None = None
@@ -77,11 +78,15 @@ class GuiState:
         if self.preferences.last_project_path:
             self.open_project(self.preferences.last_project_path)
 
+    def open_editor_for(self, asset_id: int, window_class: type[BaseWindow]) -> None:
+        if asset_id not in self.editors:
+            self.editors[asset_id] = window_class(asset_id)
+            hello_imgui.add_dockable_window(self.editors[asset_id].create_imgui_window())
+
 
 @functools.cache
 def state() -> GuiState:
     from pwime.gui.area import AreaState
-    from pwime.gui.mlvl import MlvlState
     from pwime.gui.script_instance import ScriptInstanceState
 
-    return GuiState(MlvlState(), AreaState(), ScriptInstanceState(), Preferences())
+    return GuiState(AreaState(), ScriptInstanceState(), Preferences())
