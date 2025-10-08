@@ -101,7 +101,7 @@ class StrgWindow(BaseWindow[Strg]):
             self.language_index = selected
 
         if imgui.begin_table(
-                f"Strings for {languages[self.language_index]}", 4,
+                f"Strings for {languages[self.language_index]}", 3,
                 imgui.TableFlags_.row_bg | imgui.TableFlags_.borders_h | imgui.TableFlags_.resizable | imgui.TableFlags_.scroll_y
         ):
             strings = self.asset.get_strings(languages[self.language_index])
