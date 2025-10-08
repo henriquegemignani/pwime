@@ -350,6 +350,7 @@ dependencies = [
     { name = "appdirs" },
     { name = "humanize" },
     { name = "imgui-bundle" },
+    { name = "pillow" },
     { name = "retro-data-structures" },
     { name = "tqdm" },
 ]
@@ -366,6 +367,7 @@ requires-dist = [
     { name = "appdirs" },
     { name = "humanize" },
     { name = "imgui-bundle" },
+    { name = "pillow", specifier = ">=11.3.0" },
     { name = "pytest", marker = "extra == 'test'" },
     { name = "pytest-cov", marker = "extra == 'test'" },
     { name = "pytest-mock", marker = "extra == 'test'" },

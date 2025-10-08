@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import functools
+import tempfile
 import typing
 from typing import TYPE_CHECKING
 
@@ -31,6 +32,7 @@ class FilteredAssetList(typing.NamedTuple):
 
 @dataclasses.dataclass()
 class GuiState:
+    temp_assets_path: str
     instance_state: ScriptInstanceState
     preferences: Preferences
     editors: dict[int, BaseWindow] = dataclasses.field(default_factory=dict)
@@ -90,4 +92,7 @@ class GuiState:
 def state() -> GuiState:
     from pwime.gui.script_instance import ScriptInstanceState
 
-    return GuiState(ScriptInstanceState(), Preferences())
+    return GuiState(
+        tempfile.mkdtemp(),
+        ScriptInstanceState(), Preferences()
+    )

@@ -8,10 +8,12 @@ from pathlib import Path
 
 import humanize
 from imgui_bundle import hello_imgui, imgui, imgui_node_editor, immapp
+from retro_data_structures.formats.txtr import TXTRHeader
 from retro_data_structures.game_check import Game
 
 from pwime.gui.editor.mlvl_window import MlvlWindow
 from pwime.gui.editor.strg_window import StrgWindow
+from pwime.gui.editor.txtr_window import TxtrWindow
 from pwime.gui.gui_state import state
 from pwime.gui.gui_tools import FilePrompt, IsoPrompt
 from pwime.gui.popup import ConfirmCancelActionPopup
@@ -25,6 +27,7 @@ if typing.TYPE_CHECKING:
 POSSIBLE_ASSET_TYPES = [
     "MLVL",
     "STRG",
+    "TXTR",
 ]
 
 
@@ -76,6 +79,8 @@ def main_gui() -> None:
                             state().open_editor_for(i, MlvlWindow)
                         case "STRG":
                             state().open_editor_for(i, StrgWindow)
+                        case "TXTR":
+                            state().open_editor_for(i, TxtrWindow)
                         case _:
                             print("UNKNOWN!")
 
@@ -192,6 +197,10 @@ class ExportProjectPopup(ConfirmCancelActionPopup):
         preferences.write_to_user_home()
 
 
+def _set_assets_path() -> None:
+    hello_imgui.set_assets_folder(state().temp_assets_path)
+
+
 def _show_menu() -> None:
     if imgui.begin_menu("Project"):
         if imgui.menu_item("New", "", False)[0]:
@@ -258,6 +267,7 @@ def run_gui(args: argparse.Namespace) -> None:
 
     state().preferences.read_from_user_home()
     state().restore_from_preferences()
+    state().pending_pre_frame_tasks.append(_set_assets_path)
 
     runner_params = hello_imgui.RunnerParams()
     runner_params.callbacks.show_menus = _show_menu

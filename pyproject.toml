@@ -24,14 +24,13 @@ dynamic = ["version"]
 
 dependencies = [
     "retro-data-structures>=0.22.0",
-
     # UI things
     "imgui-bundle",
     "humanize",
     "appdirs",
-
     # CLI UI
     "tqdm",
+    "pillow>=11.3.0",
 ]
 
 [project.readme]
