@@ -30,7 +30,7 @@ dependencies = [
     "appdirs",
     # CLI UI
     "tqdm",
-    "pillow>=11.3.0",
+    "pillow>=12.2.0",
 ]
 
 [project.readme]
