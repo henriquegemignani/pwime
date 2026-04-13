@@ -23,7 +23,7 @@ requires-python = ">=3.12"
 dynamic = ["version"]
 
 dependencies = [
-    "retro-data-structures>=0.22.0",
+    "retro-data-structures>=0.34.0",
     # UI things
     "imgui-bundle",
     "humanize",
