@@ -54,10 +54,11 @@ class MreaWindow(BaseWindow[Mrea]):
             for layer in self.area.all_layers:
                 for instance in layer.instances:
                     instance_name = instance.name
+                    instance_id = str(instance.id)
                     type_name = instance.type.__name__
 
                     if self.filter:
-                        if self.filter not in instance_name and self.filter not in type_name:
+                        if self.filter not in instance_name and self.filter not in type_name and self.filter not in instance_id:
                             continue
 
                     imgui.table_next_row()
@@ -65,12 +66,12 @@ class MreaWindow(BaseWindow[Mrea]):
                     imgui.table_next_column()
                     imgui.text(layer.name if layer.has_parent else "<Generated Objects>")
                     imgui.table_next_column()
-                    imgui.text(str(instance.id))
+                    imgui.text(instance_id)
                     imgui.table_next_column()
                     imgui.text(type_name)
                     imgui.table_next_column()
                     if imgui.selectable(
-                        f"{instance_name}##{instance.id}",
+                        f"{instance_name}##{instance_id}",
                         False,
                         imgui.SelectableFlags_.span_all_columns,
                     )[1]:
