@@ -75,7 +75,7 @@ def _modified_fields(prop: type[BaseProperty], delta: JsonObject, parent: str = 
 
 def create_patch_for(instance: ScriptInstance, value_path: tuple[str, ...], new_value: typing.Any) -> JsonObject:
     delta = {}
-    current_type = instance.type
+    current_type = instance.script_type
     current_value = delta
 
     for i, name in enumerate(value_path):
