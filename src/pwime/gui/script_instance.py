@@ -37,7 +37,7 @@ def submit_edit_for(reference: PropReference, new_value: typing.Any) -> None:
     state().project.add_new_operation(
         ScriptInstancePropertyEdit(
             reference.instance,
-            instance.type,
+            instance.script_type,
             delta,
         )
     )
@@ -643,7 +643,7 @@ class ScriptInstanceState(hello_imgui.DockableWindow):
                 else:
                     try:
                         target = area.get_instance(connection.target)
-                        target_description = f"{target.type.__name__} - {target.name}"
+                        target_description = f"{target.script_type.__name__} - {target.name}"
                     except KeyError:
                         target_description = "Missing"
 

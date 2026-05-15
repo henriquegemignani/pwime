@@ -55,7 +55,7 @@ class MreaWindow(BaseWindow[Mrea]):
                 for instance in layer.instances:
                     instance_name = instance.name
                     instance_id = str(instance.id)
-                    type_name = instance.type.__name__
+                    type_name = instance.script_type.__name__
 
                     if self.filter:
                         if self.filter not in instance_name and self.filter not in type_name and self.filter not in instance_id:
@@ -90,28 +90,28 @@ class MreaWindow(BaseWindow[Mrea]):
             if not self.layer_states.get(layer.index):
                 continue
 
-            for object in layer.instances:
-                node_id = ed.NodeId(int(object.id))
+            for obj in layer.instances:
+                node_id = ed.NodeId(int(obj.id))
 
-                if object.id not in self.has_position:
+                if obj.id not in self.has_position:
                     try:
-                        editor_properties: EditorProperties = object.get_properties().editor_properties
+                        editor_properties: EditorProperties = obj.get_properties().editor_properties
                         pos = editor_properties.transform.position
                         ed.set_node_position(node_id, imgui.ImVec2(pos.x * 100, pos.y * 100))
                     except Exception as e:
                         print(e)
-                    self.has_position.add(object.id)
+                    self.has_position.add(obj.id)
 
                 ed.begin_node(node_id)
-                imgui.text(f"{object.id} - {object.type.__name__}")
-                imgui.text(object.name)
+                imgui.text(f"{obj.id} - {obj.script_type.__name__}")
+                imgui.text(obj.name)
 
-                ed.begin_pin(ed.PinId(object.id << 1), ed.PinKind.input)
+                ed.begin_pin(ed.PinId(obj.id << 1), ed.PinKind.input)
 
                 imgui.text("-> In")
                 ed.end_pin()
                 imgui.same_line()
-                ed.begin_pin(ed.PinId((object.id << 1) + 1), ed.PinKind.output)
+                ed.begin_pin(ed.PinId((obj.id << 1) + 1), ed.PinKind.output)
                 imgui.text("Out ->")
                 ed.end_pin()
 
@@ -119,9 +119,9 @@ class MreaWindow(BaseWindow[Mrea]):
 
         i = 1 << 32
         for layer in self.area.layers:
-            for object in layer.instances:
-                for connection in object.connections:
-                    ed.link(ed.LinkId(i), ed.PinId(connection.target << 1), ed.PinId((object.id << 1) + 1))
+            for obj in layer.instances:
+                for connection in obj.connections:
+                    ed.link(ed.LinkId(i), ed.PinId(connection.target << 1), ed.PinId((obj.id << 1) + 1))
                     i += 1
 
         ed.end()
