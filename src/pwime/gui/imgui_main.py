@@ -59,8 +59,7 @@ def main_gui() -> None:
                 if asset_manager.get_asset_type(i) not in state().selected_asset_types:
                     continue
 
-                asset_name = asset_manager.asset_names.get(i, "<unknown>")
-                if state().asset_filter not in asset_name:
+                if state().asset_filter.lower() not in state().get_asset_name(i):
                     continue
 
                 imgui.table_next_row()

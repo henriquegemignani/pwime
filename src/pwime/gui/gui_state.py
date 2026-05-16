@@ -56,15 +56,25 @@ class GuiState:
         self.project = Project.load_from_file(path, self.file_providers)
         self.current_project_path = path
 
+    def get_asset_name(self, asset_id: int) -> str:
+        name = self.asset_manager.asset_names.get(asset_id)
+        if name:
+            return name
+        else:
+            return f"<unknown {asset_id:08x}>"
+
     def filtered_asset_list(self, asset_types: frozenset[str], name_filter: str) -> FilteredAssetList:
+        manager = self.asset_manager
+        assert manager is not None
+
         return FilteredAssetList(
             asset_types,
             name_filter,
             [
                 asset
-                for asset in self.asset_manager.all_asset_ids()
-                if self.asset_manager.get_asset_type(asset) in asset_types
-                and (not name_filter or name_filter in self.asset_manager.asset_names.get(asset, "<unknown>"))
+                for asset in manager.all_asset_ids()
+                if manager.get_asset_type(asset) in asset_types
+                and (not name_filter or name_filter.lower() in self.get_asset_name(asset).lower())
             ],
         )
 
@@ -73,7 +83,10 @@ class GuiState:
 
     def restore_from_preferences(self):
         for game, path in self.preferences.game_iso_paths.items():
-            self.load_iso(game, path)
+            try:
+                self.load_iso(game, path)
+            except FileNotFoundError:
+                return
 
         if self.preferences.last_project_path:
             self.open_project(self.preferences.last_project_path)
