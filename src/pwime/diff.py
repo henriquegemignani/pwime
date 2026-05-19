@@ -2,7 +2,7 @@ import argparse
 from typing import TYPE_CHECKING
 
 import tqdm
-from retro_data_structures.asset_manager import IsoFileProvider
+from retro_data_structures.file_provider import IsoFileProvider
 from retro_data_structures.game_check import Game
 
 from pwime.asset_manager import OurAssetManager

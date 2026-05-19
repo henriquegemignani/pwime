@@ -487,7 +487,7 @@ wheels = [
 
 [[package]]
 name = "retro-data-structures"
-version = "0.40.0"
+version = "0.42.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "construct" },
@@ -497,9 +497,9 @@ dependencies = [
     { name = "pycryptodome" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/87/c7/87b05af7020c4577bf241b40c627fd855079651d3773397811fe28a5405d/retro_data_structures-0.40.0.tar.gz", hash = "sha256:73001c591d591f4d7f279739bfdc89be0f16559f9f365d2f8e439e16fb7ca85e", size = 1950986, upload-time = "2026-05-09T15:59:24.239Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e9/e3/eb0fa68d2e83709be414b3d4d407257a925e4e89fc85170e861c75b3d431/retro_data_structures-0.42.0.tar.gz", hash = "sha256:18fe1ebfb7da0c3f8dbbbc6d70e4a074a96637eb6c774d18ed0896c622584c79", size = 1953981, upload-time = "2026-05-18T19:57:02.901Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5a/63/58536a267887606a76def037a70b010d8c9f965aadd888ef00daa99e8119/retro_data_structures-0.40.0-py3-none-any.whl", hash = "sha256:02dc9ed73c4b8bb6daf70c6704aded6b3034066478d176d7224e3c343ea35c4c", size = 4034423, upload-time = "2026-05-09T15:59:21.885Z" },
+    { url = "https://files.pythonhosted.org/packages/16/f0/c1829ddb08babcdbbaf26834963631ed8c99d71070b218ce0a31de00fb34/retro_data_structures-0.42.0-py3-none-any.whl", hash = "sha256:cf7eb5d14eb6baa4f0df37eab6f73e1c08c7ffb674f87c38bd10b70cebaf7080", size = 3930559, upload-time = "2026-05-18T19:57:00.422Z" },
 ]
 
 [[package]]

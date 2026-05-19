@@ -5,7 +5,8 @@ import typing
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from retro_data_structures.asset_manager import AssetManager, IsoFileProvider
+from retro_data_structures.asset_manager import AssetManager
+from retro_data_structures.file_provider import IsoFileProvider
 from retro_data_structures.base_resource import AssetId, BaseResource, NameOrAssetId
 from retro_data_structures.game_check import Game
 

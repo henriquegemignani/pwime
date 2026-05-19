@@ -7,7 +7,7 @@ import typing
 from typing import TYPE_CHECKING
 
 from imgui_bundle._imgui_bundle import hello_imgui
-from retro_data_structures.asset_manager import IsoFileProvider
+from retro_data_structures.file_provider import IsoFileProvider
 
 from pwime.preferences import Preferences
 from pwime.project import Project
